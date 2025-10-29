@@ -1,10 +1,20 @@
 import React, { useState } from 'react';
-import { account } from '../services/appwrite';
-import { AppwriteException, ID } from 'appwrite';
+import { account, databases, ID, USER_RELATIONSHIPS_COLLECTION_ID, DATABASE_ID } from '../services/appwrite';
+import { AppwriteException, Permission } from 'appwrite';
 
 interface LoginProps {
   onLoginSuccess: () => void;
 }
+
+const generateShareCode = (length = 6) => {
+    const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789'; // O and 0 removed to avoid confusion
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+};
+
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [isLoginView, setIsLoginView] = useState(true);
@@ -37,7 +47,29 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError('');
     setIsLoading(true);
     try {
-      await account.create(ID.unique(), email, password, name);
+      const newUser = await account.create(ID.unique(), email, password, name);
+      
+      // Create a relationship document for the new user
+      const newShareCode = generateShareCode();
+      const userPermissions = [
+          Permission.update(`user:${newUser.$id}`),
+          Permission.delete(`user:${newUser.$id}`),
+      ];
+      // Let any authenticated user read this document to find the user by shareable_id
+      const readPermissions = [Permission.read('role:users')];
+
+      await databases.createDocument(
+          DATABASE_ID,
+          USER_RELATIONSHIPS_COLLECTION_ID,
+          ID.unique(),
+          { 
+            shareable_id: newShareCode, 
+            survivor_id: newUser.$id,
+            survivor_name: newUser.name 
+          },
+          [...readPermissions, ...userPermissions]
+      );
+
       await account.createEmailPasswordSession(email, password);
       onLoginSuccess();
     } catch (e) {

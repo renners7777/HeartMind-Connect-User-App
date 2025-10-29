@@ -13,7 +13,7 @@ import VoiceInput from './components/VoiceInput';
 import Login from './components/Login';
 import type { Task, Message, JournalEntry, UserPrefs } from './types';
 import { Page } from './types';
-import { client, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, SHARES_COLLECTION_ID, JOURNAL_TABLE_COLLECTION_ID, ID, account } from './services/appwrite';
+import { client, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, USER_RELATIONSHIPS_COLLECTION_ID, JOURNAL_TABLE_COLLECTION_ID, ID } from './services/appwrite';
 import AppwriteError from './components/AppwriteError';
 import { initializeApiKey } from './services/apiKeyService';
 
@@ -27,15 +27,34 @@ const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [shareableCode, setShareableCode] = useState<string | null>(null);
   const [appwriteError, setAppwriteError] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
 
-  const loadUserData = useCallback(async () => {
+  const loadUserData = useCallback(async (userId: string) => {
     try {
       setAppwriteError(false);
       const key = initializeApiKey();
       setApiKey(key);
 
+      // Fetch shareable code from the relationships table
+      try {
+        const relationshipResponse = await databases.listDocuments(
+            DATABASE_ID,
+            USER_RELATIONSHIPS_COLLECTION_ID,
+            [Query.equal('survivor_id', userId), Query.limit(1)]
+        );
+        if (relationshipResponse.documents.length > 0) {
+            const relationshipDoc = relationshipResponse.documents[0];
+            if (relationshipDoc && typeof relationshipDoc.shareable_id === 'string') {
+                setShareableCode(relationshipDoc.shareable_id);
+            }
+        }
+      } catch (error) {
+          console.warn("Could not find a shareable code for this user.", error);
+      }
+
+      // FIX: Corrected typo in TASKS_COLLECTION_ID constant.
       const taskResponse = await databases.listDocuments(DATABASE_ID, TASKS_COLLECTION_ID);
       setTasks(taskResponse.documents as unknown as Task[]);
 
@@ -60,7 +79,7 @@ const App: React.FC = () => {
         if (session) {
             setUser(session);
             setIsLoggedIn(true);
-            await loadUserData();
+            await loadUserData(session.$id);
         } else {
             setIsLoggedIn(false);
         }
@@ -192,13 +211,14 @@ const App: React.FC = () => {
   const addTask = async (text: string) => {
     if (!user) return;
     try {
-        await databases.createDocument(
+        const document = await databases.createDocument(
             DATABASE_ID, 
             TASKS_COLLECTION_ID, 
             ID.unique(), 
             { text, completed: false, creator_name: user.name }, 
             getPermissions()
         );
+        setTasks(prevTasks => [document as unknown as Task, ...prevTasks]);
     } catch (error) {
         console.error("Failed to add task:", error);
     }
@@ -246,13 +266,14 @@ const App: React.FC = () => {
             finalPermissions.push(Permission.read(`user:${caregiverId}`));
         }
 
-        await databases.createDocument(
+        const document = await databases.createDocument(
             DATABASE_ID,
             JOURNAL_TABLE_COLLECTION_ID,
             ID.unique(),
             { content, shared_with_companion: share },
             finalPermissions
         );
+        setJournalEntries(prevEntries => [document as unknown as JournalEntry, ...prevEntries]);
     } catch (error) {
         console.error("Failed to add journal entry:", error);
     }
@@ -277,78 +298,13 @@ const App: React.FC = () => {
     await checkSession();
   };
 
-  const handleLinkCompanion = async (shareableCode: string) => {
-    if (!user) throw new Error("User not logged in.");
-    
-    // 1. Find companion by shareable code
-    const response = await databases.listDocuments(DATABASE_ID, SHARES_COLLECTION_ID, [
-        Query.equal('shareable_id', shareableCode.trim().toUpperCase())
-    ]);
-
-    if (response.documents.length === 0) {
-        throw new Error('Invalid or incorrect companion code.');
-    }
-    const shareDoc = response.documents[0];
-    const companionId = shareDoc.$id; // The document ID is the companion's user ID
-    const companionName = shareDoc.name;
-
-    // 2. Update current user's preferences to store the link
-    const currentUser = await account.get();
-    await account.updatePrefs({
-        ...currentUser.prefs,
-        caregiver_id: companionId,
-        caregiver_name: companionName
-    });
-
-    // 3. Update permissions on all existing documents
-    const companionReadUpdateDelete = [
-        Permission.read(`user:${companionId}`),
-        Permission.update(`user:${companionId}`),
-        Permission.delete(`user:${companionId}`),
-    ];
-    const companionRead = [Permission.read(`user:${companionId}`)];
-
-    // Update all tasks
-    for (const task of tasks) {
-        const newPermissions = [...new Set([...task.$permissions, ...companionReadUpdateDelete])];
-        await databases.updateDocument(
-            DATABASE_ID, TASKS_COLLECTION_ID, task.$id,
-            undefined, newPermissions
-        );
-    }
-
-    // Update all messages
-    for (const message of messages) {
-      const newPermissions = [...new Set([...message.$permissions, ...companionReadUpdateDelete])];
-        await databases.updateDocument(
-            DATABASE_ID, MESSAGES_COLLECTION_ID, message.$id,
-            undefined, newPermissions
-        );
-    }
-    
-    // Update all shared journal entries
-    const sharedJournalEntries = journalEntries.filter(entry => entry.shared_with_companion);
-    for (const entry of sharedJournalEntries) {
-        const newPermissions = [...new Set([...entry.$permissions, ...companionRead])];
-        await databases.updateDocument(
-            DATABASE_ID, JOURNAL_TABLE_COLLECTION_ID, entry.$id,
-            undefined, newPermissions
-        );
-    }
-
-
-    // 4. Refresh user session and data to reflect changes
-    await checkSession();
-};
-
-
   const renderPage = () => {
     if (appwriteError) {
       return <AppwriteError />;
     }
     switch (currentPage) {
       case Page.Home:
-        return <Home onNavigate={setCurrentPage} user={user} onLinkCompanion={handleLinkCompanion} />;
+        return <Home onNavigate={setCurrentPage} user={user} shareableCode={shareableCode} />;
       case Page.Tasks:
         return <Tasks tasks={tasks} onToggleTask={toggleTask} onAddTask={addTask} />;
       case Page.Chat:
@@ -360,7 +316,7 @@ const App: React.FC = () => {
       case Page.MemoryGame:
         return <MemoryGame />;
       default:
-        return <Home onNavigate={setCurrentPage} user={user} onLinkCompanion={handleLinkCompanion} />;
+        return <Home onNavigate={setCurrentPage} user={user} shareableCode={shareableCode} />;
     }
   };
 
@@ -382,7 +338,7 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-screen font-sans bg-gray-50">
       <Header currentPage={currentPage} onNavigate={setCurrentPage} onLogout={handleLogout} />
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 pt-20 pb-24">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 pt-24 pb-36">
         {renderPage()}
       </main>
       <VoiceInput onCommand={handleVoiceCommand} apiKey={apiKey} />

@@ -3,8 +3,7 @@
 // =====================================================================
 // **ACTION REQUIRED**: PLEASE CONFIGURE YOUR APPWRITE PROJECT
 // =====================================================================
-// To run this application, you need to set up your own Appwrite project,
-// as the public one is for demonstration purposes only.
+// To run this application, you need to set up your own Appwrite project.
 //
 // Follow these steps:
 //
@@ -19,50 +18,45 @@
 //    - Copy the "Database ID" and paste it below.
 //
 // 4. **Create Collections and Attributes**:
-//    - Inside your new database, create the required Collections. After creating each, go to its "Attributes" tab to add fields.
+//    - Inside your new database, create the required Collections.
 //
 //    - **Tasks Collection**:
 //      - Create a collection named `reminders_table`. Copy its "Collection ID" below.
-//      - Add attributes:
-//        - `text`: type `string`, size `255`, `required`
-//        - `completed`: type `boolean`, `required`, default value `false`
-//        - `creator_name`: type `string`, size `255`, `optional`
+//      - Attributes: `text` (string, 255, required), `completed` (boolean, required, default: false), `creator_name` (string, 255, optional).
 //
 //    - **Messages Collection**:
 //      - Create a collection named `messages_table`. Copy its "Collection ID" below.
-//      - Add attributes:
-//        - `text`: type `string`, size `1024`, `required`
-//        - `sender`: type `string`, size `50`, `required`
+//      - Attributes: `text` (string, 1024, required), `sender` (string, 50, required).
 //
-//    - **Journal Entries Collection (New)**:
+//    - **Journal Entries Collection**:
 //      - Create a collection named `journal_table`. Copy its "Collection ID" below.
-//      - Add attributes:
-//        - `content`: type `string`, size `10000`, `required`
-//        - `shared_with_companion`: type `boolean`, `required`, default `false`
+//      - Attributes: `content` (string, 10000, required), `shared_with_companion` (boolean, required, default: false).
 //
-//    - **Shares Collection**:
-//      - Create a collection named `shares_table`. Copy its "Collection ID" below.
-//      - This collection is used by the companion app to make their shareable ID discoverable.
-//      - Add attributes:
+//    - **User Relationships Collection (NEW)**:
+//      - Create a collection named `user_relationships_table`. Copy its "Collection ID" below.
+//      - This is the central table for linking survivors and companions.
+//      - Attributes:
+//        - `survivor_id`: type `string`, size `255`, `required`.
+//        - `survivor_name`: type `string`, size `255`, `required`.
+//        - `companion_id`: type `string`, size `255`, `optional`.
+//        - `companion_name`: type `string`, size `255`, `optional`.
 //        - `shareable_id`: type `string`, size `50`, `required`. **Important**: Go to the "Indexes" tab and create a unique index on this attribute.
-//        - `name`: type `string`, size `255`, `required`.
 //
 // 5. **Configure Permissions**:
-//    - **For the `shares_table` collection:**
-//      - Go to "Settings" -> "Permissions".
-//      - Add role "All Users (role:all)" and grant them only READ access.
-//      - Add role "Any (role:any)" and grant them only CREATE access. (So only logged-in companions can create a share document).
+//    - **For the `user_relationships_table` collection:**
+//      - Go to its "Settings" -> "Permissions".
+//      - Add role "Users" (Authenticated Users) and grant them READ access. This is crucial so the companion app can look up the shareable code.
 //
 //    - **For `reminders_table`, `messages_table`, and `journal_table`:**
-//      - These will now use user-specific permissions, so no collection-level permissions are needed for "All Users".
+//      - No collection-level permissions are needed here, as document-level permissions are handled by the app code.
 //
-// 6. **Add Web Platform for Local Development**:
-//    - Go back to your project dashboard's main page.
+// 6. **Add Web Platform**:
+//    - Go to your project dashboard's main page.
 //    - Click "Add Platform" and choose "Web App".
-//    - Give it a name (e.g., "Local Dev") and for the "Hostname", enter `localhost`.
+//    - For "Hostname", enter `localhost` (for local development).
 //
 // 7. **Save and Refresh**:
-//    - Save this file with your new IDs, then refresh the application in your browser.
+//    - Save this file with your new IDs, then refresh the application.
 // =====================================================================
 
 
@@ -70,7 +64,7 @@ export const APPWRITE_PROJECT_ID = '68b201d3001d7dbcec43';
 export const DATABASE_ID = '68b213e7001400dc7f21';
 export const TASKS_COLLECTION_ID = 'reminders_table';
 export const MESSAGES_COLLECTION_ID = 'messages_table';
-export const SHARES_COLLECTION_ID = 'shares_table';
+export const USER_RELATIONSHIPS_COLLECTION_ID = 'user_relationships_table';
 export const JOURNAL_TABLE_COLLECTION_ID = 'journal_table';
 
 /**

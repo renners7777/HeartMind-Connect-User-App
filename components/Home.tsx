@@ -9,28 +9,18 @@ interface HomeProps {
     // FIX: Replaced deprecated `Models.Account` with `Models.User` for Appwrite user type.
     // FIX: Used strongly-typed UserPrefs for Appwrite user object.
     user: Models.User<UserPrefs> | null;
-    onLinkCompanion: (code: string) => Promise<void>;
+    shareableCode: string | null;
 }
 
-const Home: React.FC<HomeProps> = ({ onNavigate, user, onLinkCompanion }) => {
-  const [code, setCode] = useState('');
-  const [isLinking, setIsLinking] = useState(false);
-  const [linkError, setLinkError] = useState('');
-
+const Home: React.FC<HomeProps> = ({ onNavigate, user, shareableCode }) => {
+  const [copied, setCopied] = useState(false);
   const caregiverName = user?.prefs.caregiver_name;
 
-  const handleLinkSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!code.trim()) return;
-    setIsLinking(true);
-    setLinkError('');
-    try {
-      await onLinkCompanion(code);
-      // Success will be handled by App.tsx re-rendering and removing this component
-    } catch (error: any) {
-      setLinkError(error.message || 'An unknown error occurred.');
-    } finally {
-      setIsLinking(false);
+  const handleCopyToClipboard = () => {
+    if (shareableCode) {
+        navigator.clipboard.writeText(shareableCode);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
     }
   };
 
@@ -53,25 +43,36 @@ const Home: React.FC<HomeProps> = ({ onNavigate, user, onLinkCompanion }) => {
       ) : (
         <div className="p-6 bg-white rounded-lg shadow-md">
             <h3 className="text-lg font-semibold text-gray-800 mb-1">Link with a Companion</h3>
-            <p className="text-gray-600 mb-4">Enter the 6-digit code from your companion's app to connect.</p>
-            <form onSubmit={handleLinkSubmit} className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                <input 
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="e.g., Y8HFMA"
-                    className="flex-grow w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    maxLength={6}
-                />
-                <button 
-                    type="submit"
-                    disabled={isLinking}
-                    className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-colors"
-                >
-                    {isLinking ? 'Linking...' : 'Link'}
-                </button>
-            </form>
-            {linkError && <p className="text-red-600 text-sm mt-2">{linkError}</p>}
+            <p className="text-gray-600 mb-4">Share this code with your companion. They can use it in their app to connect with you.</p>
+            {shareableCode ? (
+                <div className="flex items-center gap-2 p-3 bg-gray-100 rounded-md border">
+                    <p className="flex-grow text-2xl font-bold tracking-widest text-blue-700 font-mono text-center">
+                        {shareableCode}
+                    </p>
+                    <button 
+                        onClick={handleCopyToClipboard}
+                        className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center gap-2"
+                        aria-label="Copy code to clipboard"
+                    >
+                        {copied ? (
+                           <>
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                             <span>Copied!</span>
+                           </>
+                        ) : (
+                            <>
+                               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                               <span>Copy</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            ) : (
+                <div className="text-center text-gray-500 p-4">
+                    <div className="w-6 h-6 border-2 border-dashed rounded-full animate-spin border-blue-600 mx-auto"></div>
+                    <p className="mt-2">Loading your code...</p>
+                </div>
+            )}
         </div>
       )}
 

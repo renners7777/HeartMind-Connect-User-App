@@ -5,7 +5,7 @@ import {
     DATABASE_ID, 
     TASKS_COLLECTION_ID, 
     MESSAGES_COLLECTION_ID,
-    SHARES_COLLECTION_ID,
+    USER_RELATIONSHIPS_COLLECTION_ID,
     JOURNAL_TABLE_COLLECTION_ID
 } from './appwriteConfig';
 import type { UserPrefs } from '../types';
@@ -47,4 +47,4 @@ export const logoutUser = async () => {
 export { ID };
 
 // Re-export IDs for a single point of import elsewhere in the app.
-export { DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, SHARES_COLLECTION_ID, JOURNAL_TABLE_COLLECTION_ID };
+export { DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, USER_RELATIONSHIPS_COLLECTION_ID, JOURNAL_TABLE_COLLECTION_ID };
