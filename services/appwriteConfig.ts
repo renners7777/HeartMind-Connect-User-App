@@ -19,24 +19,36 @@
 //    - Copy the "Database ID" and paste it below.
 //
 // 4. **Create Collections and Attributes**:
-//    - Inside your new database, create two Collections. After creating each, go to its "Attributes" tab to add fields.
+//    - Inside your new database, create the required Collections. After creating each, go to its "Attributes" tab to add fields.
 //
 //    - **Tasks Collection**:
 //      - Create a collection named `reminders_table`. Copy its "Collection ID" below.
 //      - Add attributes:
 //        - `text`: type `string`, size `255`, `required`
 //        - `completed`: type `boolean`, `required`, default value `false`
+//        - `creator_name`: type `string`, size `255`, `optional` (new)
 //
 //    - **Messages Collection**:
-//      - Create another collection named `messages_table`. Copy its "Collection ID" below.
+//      - Create a collection named `messages_table`. Copy its "Collection ID" below.
 //      - Add attributes:
 //        - `text`: type `string`, size `1024`, `required`
 //        - `sender`: type `string`, size `50`, `required`
 //
+//    - **Shares Collection (New)**:
+//      - Create a collection named `shares_table`. Copy its "Collection ID" below.
+//      - This collection is used by the companion app to make their shareable ID discoverable.
+//      - Add attributes:
+//        - `shareable_id`: type `string`, size `50`, `required`. **Important**: Go to the "Indexes" tab and create a unique index on this attribute.
+//        - `name`: type `string`, size `255`, `required`.
+//
 // 5. **Configure Permissions**:
-//    - For both the "reminders_table" and "messages_table" collections, go to the "Settings" tab.
-//    - Under "Permissions", click "Add Role". Select "All Users (role:all)" and grant them
-//      CREATE, READ, UPDATE, and DELETE permissions. This allows the app to function without user logins.
+//    - **For the `shares_table` collection:**
+//      - Go to "Settings" -> "Permissions".
+//      - Add role "All Users (role:all)" and grant them only READ access.
+//      - Add role "Any (role:any)" and grant them only CREATE access. (So only logged-in companions can create a share document).
+//
+//    - **For `reminders_table` and `messages_table`:**
+//      - These will now use user-specific permissions, so no collection-level permissions are needed for "All Users".
 //
 // 6. **Add Web Platform for Local Development**:
 //    - Go back to your project dashboard's main page.
@@ -52,6 +64,7 @@ export const APPWRITE_PROJECT_ID = '68b201d3001d7dbcec43';
 export const DATABASE_ID = '68b213e7001400dc7f21';
 export const TASKS_COLLECTION_ID = 'reminders_table';
 export const MESSAGES_COLLECTION_ID = 'messages_table';
+export const SHARES_COLLECTION_ID = 'shares_table';
 
 /**
  * A simple check to see if the user has updated the configuration placeholders.

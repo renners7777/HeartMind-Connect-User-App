@@ -1,22 +1,78 @@
-
-import React from 'react';
+import React, { useState } from 'react';
+import type { Models } from 'appwrite';
 import type { Page } from '../types';
 import { Page as PageEnum } from '../types';
 
-
 interface HomeProps {
     onNavigate: (page: Page) => void;
+    // FIX: Replaced deprecated `Models.Account` with `Models.User` for Appwrite user type.
+    user: Models.User<Models.Preferences> | null;
+    onLinkCompanion: (code: string) => Promise<void>;
 }
 
-const Home: React.FC<HomeProps> = ({ onNavigate }) => {
+const Home: React.FC<HomeProps> = ({ onNavigate, user, onLinkCompanion }) => {
+  const [code, setCode] = useState('');
+  const [isLinking, setIsLinking] = useState(false);
+  const [linkError, setLinkError] = useState('');
+
+  const caregiverName = user?.prefs.caregiver_name;
+
+  const handleLinkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setIsLinking(true);
+    setLinkError('');
+    try {
+      await onLinkCompanion(code);
+      // Success will be handled by App.tsx re-rendering and removing this component
+    } catch (error: any) {
+      setLinkError(error.message || 'An unknown error occurred.');
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
+
   return (
     <div className="space-y-6">
       <div className="p-6 bg-white rounded-lg shadow-md text-center">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-2">Welcome Back!</h2>
+        <h2 className="text-2xl font-semibold text-gray-800 mb-2">Welcome Back, {user?.name}!</h2>
         <p className="text-gray-600">
           We're here to support you. What would you like to do today?
         </p>
       </div>
+
+      {caregiverName ? (
+        <div className="p-6 bg-green-50 border border-green-200 rounded-lg shadow-sm text-center">
+            <p className="text-green-800 font-medium">
+                You are linked with your companion, <span className="font-bold">{caregiverName}</span>.
+            </p>
+        </div>
+      ) : (
+        <div className="p-6 bg-white rounded-lg shadow-md">
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">Link with a Companion</h3>
+            <p className="text-gray-600 mb-4">Enter the 6-digit code from your companion's app to connect.</p>
+            <form onSubmit={handleLinkSubmit} className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <input 
+                    type="text"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="e.g., Y8HFMA"
+                    className="flex-grow w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    maxLength={6}
+                />
+                <button 
+                    type="submit"
+                    disabled={isLinking}
+                    className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-colors"
+                >
+                    {isLinking ? 'Linking...' : 'Link'}
+                </button>
+            </form>
+            {linkError && <p className="text-red-600 text-sm mt-2">{linkError}</p>}
+        </div>
+      )}
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <HomeCard

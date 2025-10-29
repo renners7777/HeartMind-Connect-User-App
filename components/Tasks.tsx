@@ -47,18 +47,27 @@ interface TaskItemProps {
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, onToggleTask, index }) => (
     <li
-        className="flex items-center p-3 bg-gray-50 rounded-md transition-colors duration-200"
+        className="flex items-start p-3 bg-gray-50 rounded-md transition-colors duration-200"
     >
-        <span className="mr-3 font-bold text-blue-600">{index + 1}.</span>
-        <input
-            type="checkbox"
-            checked={task.completed}
-            onChange={() => onToggleTask(task.$id)}
-            className="h-6 w-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-        />
-        <span className={`ml-4 text-lg flex-1 ${task.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-            {task.text}
-        </span>
+        <div className="flex items-center flex-shrink-0 mt-1">
+            <span className="mr-3 font-bold text-blue-600">{index + 1}.</span>
+            <input
+                type="checkbox"
+                checked={task.completed}
+                onChange={() => onToggleTask(task.$id)}
+                className="h-6 w-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+            />
+        </div>
+        <div className="ml-4 flex-1">
+            <span className={`text-lg ${task.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                {task.text}
+            </span>
+            {task.creator_name && (
+                <p className="text-xs text-gray-500 mt-1">
+                    Added by {task.creator_name}
+                </p>
+            )}
+        </div>
     </li>
 );
 

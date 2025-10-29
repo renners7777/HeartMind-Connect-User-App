@@ -10,6 +10,9 @@ export interface Task {
   text: string;
   completed: boolean;
   $createdAt: string;
+  creator_name?: string;
+  // FIX: Added `$permissions` array to correctly type Appwrite documents.
+  $permissions: string[];
 }
 
 export interface Message {
@@ -17,4 +20,6 @@ export interface Message {
   text: string;
   sender: 'user' | 'companion';
   $createdAt: string;
+  // FIX: Added `$permissions` array to correctly type Appwrite documents.
+  $permissions: string[];
 }

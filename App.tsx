@@ -10,14 +10,15 @@ import VoiceInput from './components/VoiceInput';
 import Login from './components/Login';
 import type { Task, Message } from './types';
 import { Page } from './types';
-import { client, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, ID } from './services/appwrite';
+import { client, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, SHARES_COLLECTION_ID, ID, account } from './services/appwrite';
 import AppwriteError from './components/AppwriteError';
 import { initializeApiKey } from './services/apiKeyService';
 
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState<Models.Account<Models.Preferences> | null>(null);
+  // FIX: Replaced deprecated `Models.Account` with `Models.User` for Appwrite user type.
+  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>(Page.Home);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -44,26 +45,28 @@ const App: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    const checkSession = async () => {
-        setIsLoading(true);
-        try {
-            const session = await getSession();
-            if (session) {
-                setUser(session);
-                setIsLoggedIn(true);
-                await loadUserData();
-            } else {
-                setIsLoggedIn(false);
-            }
-        } catch (e) {
+  const checkSession = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const session = await getSession();
+        if (session) {
+            setUser(session);
+            setIsLoggedIn(true);
+            await loadUserData();
+        } else {
             setIsLoggedIn(false);
-        } finally {
-            setIsLoading(false);
         }
-    };
-    checkSession();
+    } catch (e) {
+        setIsLoggedIn(false);
+    } finally {
+        setIsLoading(false);
+    }
   }, [loadUserData]);
+
+
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -140,15 +143,36 @@ const App: React.FC = () => {
     }
   };
 
+  const getPermissions = () => {
+    if (!user) return [];
+    const userPermissions = [
+      Permission.read(`user:${user.$id}`),
+      Permission.update(`user:${user.$id}`),
+      Permission.delete(`user:${user.$id}`),
+    ];
+
+    const caregiverId = user.prefs.caregiver_id;
+    if (caregiverId) {
+      return [
+        ...userPermissions,
+        Permission.read(`user:${caregiverId}`),
+        Permission.update(`user:${caregiverId}`),
+        Permission.delete(`user:${caregiverId}`),
+      ];
+    }
+    return userPermissions;
+  }
+
   const addTask = async (text: string) => {
     if (!user) return;
     try {
-        const permissions = [
-            Permission.read(`user:${user.$id}`),
-            Permission.update(`user:${user.$id}`),
-            Permission.delete(`user:${user.$id}`),
-        ];
-        await databases.createDocument(DATABASE_ID, TASKS_COLLECTION_ID, ID.unique(), { text, completed: false }, permissions);
+        await databases.createDocument(
+            DATABASE_ID, 
+            TASKS_COLLECTION_ID, 
+            ID.unique(), 
+            { text, completed: false, creator_name: user.name }, 
+            getPermissions()
+        );
     } catch (error) {
         console.error("Failed to add task:", error);
     }
@@ -168,12 +192,13 @@ const App: React.FC = () => {
   const sendMessage = async (text: string) => {
     if (!user) return;
     try {
-        const permissions = [
-            Permission.read(`user:${user.$id}`),
-            Permission.update(`user:${user.$id}`),
-            Permission.delete(`user:${user.$id}`),
-        ];
-        const response = await databases.createDocument(DATABASE_ID, MESSAGES_COLLECTION_ID, ID.unique(), { text, sender: 'user' }, permissions);
+        const response = await databases.createDocument(
+            DATABASE_ID, 
+            MESSAGES_COLLECTION_ID, 
+            ID.unique(), 
+            { text, sender: 'user' }, 
+            getPermissions()
+        );
         setMessages(prev => [...prev, response as unknown as Message]);
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -194,17 +219,60 @@ const App: React.FC = () => {
   };
   
   const handleLoginSuccess = async () => {
-    setIsLoading(true);
-    const session = await getSession();
-    if (session) {
-        setUser(session);
-        setIsLoggedIn(true);
-        await loadUserData();
-    } else {
-        setIsLoggedIn(false);
-    }
-    setIsLoading(false);
+    await checkSession();
   };
+
+  const handleLinkCompanion = async (shareableCode: string) => {
+    if (!user) throw new Error("User not logged in.");
+    
+    // 1. Find companion by shareable code
+    const response = await databases.listDocuments(DATABASE_ID, SHARES_COLLECTION_ID, [
+        Query.equal('shareable_id', shareableCode.trim().toUpperCase())
+    ]);
+
+    if (response.documents.length === 0) {
+        throw new Error('Invalid or incorrect companion code.');
+    }
+    const shareDoc = response.documents[0];
+    const companionId = shareDoc.$id; // The document ID is the companion's user ID
+    const companionName = shareDoc.name;
+
+    // 2. Update current user's preferences to store the link
+    const currentUser = await account.get();
+    await account.updatePrefs({
+        ...currentUser.prefs,
+        caregiver_id: companionId,
+        caregiver_name: companionName
+    });
+
+    // 3. Update permissions on all existing documents
+    const companionPermissions = [
+        Permission.read(`user:${companionId}`),
+        Permission.update(`user:${companionId}`),
+        Permission.delete(`user:${companionId}`),
+    ];
+
+    // Update all tasks
+    for (const task of tasks) {
+        const newPermissions = [...new Set([...task.$permissions, ...companionPermissions])];
+        await databases.updateDocument(
+            DATABASE_ID, TASKS_COLLECTION_ID, task.$id,
+            undefined, newPermissions
+        );
+    }
+
+    // Update all messages
+    for (const message of messages) {
+      const newPermissions = [...new Set([...message.$permissions, ...companionPermissions])];
+        await databases.updateDocument(
+            DATABASE_ID, MESSAGES_COLLECTION_ID, message.$id,
+            undefined, newPermissions
+        );
+    }
+
+    // 4. Refresh user session and data to reflect changes
+    await checkSession();
+};
 
 
   const renderPage = () => {
@@ -213,7 +281,7 @@ const App: React.FC = () => {
     }
     switch (currentPage) {
       case Page.Home:
-        return <Home onNavigate={setCurrentPage} />;
+        return <Home onNavigate={setCurrentPage} user={user} onLinkCompanion={handleLinkCompanion} />;
       case Page.Tasks:
         return <Tasks tasks={tasks} onToggleTask={toggleTask} />;
       case Page.Chat:
@@ -221,7 +289,7 @@ const App: React.FC = () => {
       case Page.Progress:
         return <Progress tasks={tasks} />;
       default:
-        return <Home onNavigate={setCurrentPage} />;
+        return <Home onNavigate={setCurrentPage} user={user} onLinkCompanion={handleLinkCompanion} />;
     }
   };
 
