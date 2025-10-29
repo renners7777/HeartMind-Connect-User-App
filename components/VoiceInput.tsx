@@ -69,15 +69,11 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
 
   const startListening = async () => {
     const currentApiKey = getApiKey();
+    // Fix: Updated API key check to align with new service which does not prompt the user.
     if (!currentApiKey) {
-        // The service will prompt the user if no key is found.
-        // If they cancel, we shouldn't proceed.
-        // Re-check in case the prompt was successful.
-        if(!getApiKey()) {
-            console.error("Cannot start voice input without an API key.");
-            setStatus("API Key required");
-            return;
-        }
+        console.error("Cannot start voice input without an API key.");
+        setStatus("API Key required");
+        return;
     }
 
     if (isListening) {

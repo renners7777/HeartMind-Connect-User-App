@@ -58,8 +58,10 @@ export const MESSAGES_COLLECTION_ID = 'messages_table';
  * @returns {boolean} True if the project appears to be configured.
  */
 export const isAppwriteConfigured = () => {
-    return APPWRITE_PROJECT_ID !== '68b201d3001d7dbcec43' &&
-           DATABASE_ID !== '68b213e7001400dc7f21' &&
-           TASKS_COLLECTION_ID !== 'reminders_table' &&
-           MESSAGES_COLLECTION_ID !== 'messages_table';
+    // Check if the configuration values are filled, rather than comparing to specific placeholders.
+    // This is more robust and prevents errors if a valid project uses similar IDs.
+    return APPWRITE_PROJECT_ID.length > 0 &&
+           DATABASE_ID.length > 0 &&
+           TASKS_COLLECTION_ID.length > 0 &&
+           MESSAGES_COLLECTION_ID.length > 0;
 };

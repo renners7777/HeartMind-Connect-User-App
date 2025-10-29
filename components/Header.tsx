@@ -5,6 +5,7 @@ import { Page as PageEnum } from '../types';
 interface HeaderProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
+  onLogout: () => void;
 }
 
 const NavButton: React.FC<{
@@ -27,13 +28,19 @@ const NavButton: React.FC<{
   </button>
 );
 
-const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate }) => {
+const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate, onLogout }) => {
   return (
     <header className="bg-white shadow-md">
-      <div className="max-w-4xl mx-auto px-4 py-3">
-        <h1 className="text-2xl font-bold text-center text-gray-800">
-          HeartMind Connect user app
+      <div className="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">
+          HeartMind Connect
         </h1>
+        <button
+          onClick={onLogout}
+          className="px-4 py-2 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+        >
+          Logout
+        </button>
       </div>
       <nav className="bg-gray-50 border-t border-b">
         <div className="max-w-4xl mx-auto flex justify-around">

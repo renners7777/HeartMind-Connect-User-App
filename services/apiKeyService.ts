@@ -1,66 +1,37 @@
 // services/apiKeyService.ts
 
-// This variable will hold the key in memory after it's been retrieved once.
+// This variable will hold the key in memory after it's been retrieved.
 let apiKey: string | null = null;
-const API_KEY_STORAGE_KEY = 'gemini_api_key';
-
-/**
- * Retrieves the Google AI API key.
- * It follows a specific order:
- * 1. Check for an environment variable (process.env.API_KEY).
- * 2. Check for a key saved in the browser's local storage.
- * 3. If not found, prompt the user to enter their key.
- * @returns The API key string, or null if not found or provided.
- */
-function retrieveApiKey(): string | null {
-  // 1. Check environment variables (for deployed environments)
-  if (process.env && process.env.API_KEY) {
-    return process.env.API_KEY;
-  }
-
-  // 2. Check local storage
-  try {
-    const storedKey = localStorage.getItem(API_KEY_STORAGE_KEY);
-    if (storedKey) {
-      return storedKey;
-    }
-  } catch (error) {
-    console.error("Could not access localStorage:", error);
-  }
-
-  // 3. Prompt the user as a last resort
-  try {
-    const userProvidedKey = window.prompt(
-      "Please enter your Google AI API Key for voice features:"
-    );
-    if (userProvidedKey) {
-      // Save it to local storage for future sessions
-      localStorage.setItem(API_KEY_STORAGE_KEY, userProvidedKey);
-      return userProvidedKey;
-    }
-  } catch (error) {
-    console.error("Could not display prompt:", error);
-  }
-
-  return null;
-}
+// We use a flag to ensure we only check the environment variable once.
+let initialized = false;
 
 /**
  * Initializes the API key for the application session.
- * It calls retrieveApiKey() once and stores the result in memory.
+ * It retrieves the key from process.env.API_KEY once and stores it.
+ * The key's availability is handled externally as a hard requirement.
  * @returns The API key string or null.
  */
 export function initializeApiKey(): string | null {
-  if (!apiKey) {
-    apiKey = retrieveApiKey();
+  if (!initialized) {
+    // The API key MUST be obtained exclusively from the environment variable.
+    apiKey = (process.env && process.env.API_KEY) || null;
+    if (!apiKey) {
+      console.error("Gemini API Key not found. Please set the API_KEY environment variable.");
+    }
+    initialized = true;
   }
   return apiKey;
 }
 
 /**
  * Gets the already initialized API key.
+ * This is a convenience function to avoid re-initializing.
  * @returns The API key string or null.
  */
 export function getApiKey(): string | null {
-    return apiKey;
+  if (!initialized) {
+    // Ensure initialization happens if this is called first.
+    return initializeApiKey();
+  }
+  return apiKey;
 }

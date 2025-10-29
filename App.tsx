@@ -1,54 +1,72 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import type { Models } from 'appwrite';
+import { Permission, Query } from 'appwrite';
 import Header from './components/Header';
 import Home from './components/Home';
 import Tasks from './components/Tasks';
 import Chat from './components/Chat';
 import Progress from './components/Progress';
 import VoiceInput from './components/VoiceInput';
+import Login from './components/Login';
 import type { Task, Message } from './types';
 import { Page } from './types';
-import { client, databases, getSession, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, ID } from './services/appwrite';
-import { Query } from 'appwrite';
+import { client, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, ID } from './services/appwrite';
 import AppwriteError from './components/AppwriteError';
 import { initializeApiKey } from './services/apiKeyService';
 
 
 const App: React.FC = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<Models.Account<Models.Preferences> | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>(Page.Home);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [appwriteError, setAppwriteError] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        setAppwriteError(false);
-        // Initialize API Key for Gemini
-        const key = initializeApiKey();
-        setApiKey(key);
+  const loadUserData = useCallback(async () => {
+    try {
+      setAppwriteError(false);
+      const key = initializeApiKey();
+      setApiKey(key);
 
-        await getSession();
+      const taskResponse = await databases.listDocuments(DATABASE_ID, TASKS_COLLECTION_ID);
+      setTasks(taskResponse.documents as unknown as Task[]);
 
-        const taskResponse = await databases.listDocuments(DATABASE_ID, TASKS_COLLECTION_ID);
-        setTasks(taskResponse.documents as unknown as Task[]);
-
-        const messageResponse = await databases.listDocuments(DATABASE_ID, MESSAGES_COLLECTION_ID, [Query.orderAsc('$createdAt')]);
-        setMessages(messageResponse.documents as unknown as Message[]);
-
-      } catch (error: any) {
-        console.error("Appwrite initialization failed:", error);
-        // A network error is the most common sign of a CORS issue in this context.
+      const messageResponse = await databases.listDocuments(DATABASE_ID, MESSAGES_COLLECTION_ID, [Query.orderAsc('$createdAt')]);
+      setMessages(messageResponse.documents as unknown as Message[]);
+    } catch (error: any) {
+        console.error("Failed to load user data:", error);
         if (error.type === 'network' || (error.message && error.message.toLowerCase().includes('network'))) {
             setAppwriteError(true);
         }
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    }
+  }, []);
 
-    init();
+  useEffect(() => {
+    const checkSession = async () => {
+        setIsLoading(true);
+        try {
+            const session = await getSession();
+            if (session) {
+                setUser(session);
+                setIsLoggedIn(true);
+                await loadUserData();
+            } else {
+                setIsLoggedIn(false);
+            }
+        } catch (e) {
+            setIsLoggedIn(false);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    checkSession();
+  }, [loadUserData]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
 
     const unsubscribeTasks = client.subscribe(`databases.${DATABASE_ID}.collections.${TASKS_COLLECTION_ID}.documents`, response => {
       const payload = response.payload as unknown as Task;
@@ -84,7 +102,7 @@ const App: React.FC = () => {
       unsubscribeTasks();
       unsubscribeMessages();
     };
-  }, []);
+  }, [isLoggedIn]);
 
   const handleVoiceCommand = (command: string) => {
     console.log('Voice command received:', command);
@@ -123,9 +141,14 @@ const App: React.FC = () => {
   };
 
   const addTask = async (text: string) => {
+    if (!user) return;
     try {
-      const response = await databases.createDocument(DATABASE_ID, TASKS_COLLECTION_ID, ID.unique(), { text, completed: false });
-      setTasks(prev => [...prev, response as unknown as Task]);
+        const permissions = [
+            Permission.read(`user:${user.$id}`),
+            Permission.update(`user:${user.$id}`),
+            Permission.delete(`user:${user.$id}`),
+        ];
+        await databases.createDocument(DATABASE_ID, TASKS_COLLECTION_ID, ID.unique(), { text, completed: false }, permissions);
     } catch (error) {
         console.error("Failed to add task:", error);
     }
@@ -135,8 +158,7 @@ const App: React.FC = () => {
     try {
       const task = tasks.find(t => t.$id === id);
       if (task) {
-        const response = await databases.updateDocument(DATABASE_ID, TASKS_COLLECTION_ID, id, { completed: !task.completed });
-        setTasks(prev => prev.map(t => t.$id === id ? response as unknown as Task : t));
+        await databases.updateDocument(DATABASE_ID, TASKS_COLLECTION_ID, id, { completed: !task.completed });
       }
     } catch(error) {
         console.error("Failed to toggle task:", error);
@@ -144,22 +166,50 @@ const App: React.FC = () => {
   };
 
   const sendMessage = async (text: string) => {
+    if (!user) return;
     try {
-      const response = await databases.createDocument(DATABASE_ID, MESSAGES_COLLECTION_ID, ID.unique(), { text, sender: 'user' });
-      // Add message locally as Appwrite doesn't broadcast back to sender
-      setMessages(prev => [...prev, response as unknown as Message]);
+        const permissions = [
+            Permission.read(`user:${user.$id}`),
+            Permission.update(`user:${user.$id}`),
+            Permission.delete(`user:${user.$id}`),
+        ];
+        const response = await databases.createDocument(DATABASE_ID, MESSAGES_COLLECTION_ID, ID.unique(), { text, sender: 'user' }, permissions);
+        setMessages(prev => [...prev, response as unknown as Message]);
     } catch (error) {
       console.error("Failed to send message:", error);
     }
+  };
+
+  const handleLogout = async () => {
+    try {
+        await logoutUser();
+    } catch (e) {
+        console.error("Failed to logout:", e);
+    }
+    setIsLoggedIn(false);
+    setUser(null);
+    setTasks([]);
+    setMessages([]);
+    setCurrentPage(Page.Home);
+  };
+  
+  const handleLoginSuccess = async () => {
+    setIsLoading(true);
+    const session = await getSession();
+    if (session) {
+        setUser(session);
+        setIsLoggedIn(true);
+        await loadUserData();
+    } else {
+        setIsLoggedIn(false);
+    }
+    setIsLoading(false);
   };
 
 
   const renderPage = () => {
     if (appwriteError) {
       return <AppwriteError />;
-    }
-    if (isLoading) {
-        return <div className="flex-1 flex items-center justify-center"><p className="text-gray-600">Connecting to support network...</p></div>;
     }
     switch (currentPage) {
       case Page.Home:
@@ -175,9 +225,24 @@ const App: React.FC = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-100">
+        <div className="text-center">
+            <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-blue-600 mx-auto"></div>
+            <p className="text-xl text-gray-600 mt-4">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+  
   return (
     <div className="flex flex-col h-screen font-sans bg-gray-50">
-      <Header currentPage={currentPage} onNavigate={setCurrentPage} />
+      <Header currentPage={currentPage} onNavigate={setCurrentPage} onLogout={handleLogout} />
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
         {renderPage()}
       </main>
