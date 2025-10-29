@@ -1,0 +1,7 @@
+{
+  "name": "HeartMind Connect user app",
+  "description": "An AI-powered application to assist stroke survivors with daily tasks, progress monitoring, and communication through voice commands and a chat feature linked to a companion app.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
