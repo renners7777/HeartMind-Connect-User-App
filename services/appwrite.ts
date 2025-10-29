@@ -1,14 +1,21 @@
 import { Client, Account, Databases, ID } from 'appwrite';
+// Import the configuration from the new file
+import { 
+    APPWRITE_PROJECT_ID, 
+    DATABASE_ID, 
+    TASKS_COLLECTION_ID, 
+    MESSAGES_COLLECTION_ID 
+} from './appwriteConfig';
 
 const APPWRITE_ENDPOINT = 'https://cloud.appwrite.io/v1';
-// Project and Database IDs from the public companion app repository
-const APPWRITE_PROJECT_ID = '6645032900259b314502';
-export const DATABASE_ID = '6645035f002d6b0a7008';
-export const TASKS_COLLECTION_ID = '6645037d00288860a92a';
-export const MESSAGES_COLLECTION_ID = '664503b40010a3003058';
 
 export const client = new Client();
-client.setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
+
+// Only set project if it's configured to avoid Appwrite SDK errors on initial load
+if (APPWRITE_PROJECT_ID && APPWRITE_PROJECT_ID !== 'PASTE_YOUR_PROJECT_ID_HERE') {
+    client.setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
+}
+
 
 export const account = new Account(client);
 export const databases = new Databases(client);
@@ -28,3 +35,6 @@ export const getSession = async () => {
 };
 
 export { ID };
+
+// Re-export IDs for a single point of import elsewhere in the app.
+export { DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID };
