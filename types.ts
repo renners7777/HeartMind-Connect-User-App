@@ -1,4 +1,3 @@
-
 import type { Models } from 'appwrite';
 
 export enum Page {
@@ -14,6 +13,8 @@ export enum Page {
 export interface UserPrefs extends Models.Preferences {
   caregiver_id?: string;
   caregiver_name?: string;
+  role?: 'survivor' | 'caregiver';
+  canCompanionAddTask?: boolean;
 }
 
 export interface Task {

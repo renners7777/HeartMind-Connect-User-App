@@ -21,6 +21,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'survivor' | 'caregiver'>('survivor');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -48,27 +49,35 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setIsLoading(true);
     try {
       const newUser = await account.create(ID.unique(), email, password, name);
-      
-      // Create a relationship document for the new user
-      const newShareCode = generateShareCode();
-      const userPermissions = [
-          Permission.update(`user:${newUser.$id}`),
-          Permission.delete(`user:${newUser.$id}`),
-      ];
-      // Let any authenticated user read this document to find the user by shareable_id
-      const readPermissions = [Permission.read('role:users')];
 
-      await databases.createDocument(
-          DATABASE_ID,
-          USER_RELATIONSHIPS_COLLECTION_ID,
-          ID.unique(),
-          { 
-            shareable_id: newShareCode, 
-            survivor_id: newUser.$id,
-            survivor_name: newUser.name 
-          },
-          [...readPermissions, ...userPermissions]
-      );
+      // Update preferences with role and default values
+      await account.updatePrefs({
+        role: role,
+        canCompanionAddTask: false,
+      });
+      
+      // Only create a relationship document and shareable code for survivors
+      if (role === 'survivor') {
+        const newShareCode = generateShareCode();
+        const userPermissions = [
+            Permission.update(`user:${newUser.$id}`),
+            Permission.delete(`user:${newUser.$id}`),
+        ];
+        // Let any authenticated user read this document to find the user by shareable_id
+        const readPermissions = [Permission.read('role:users')];
+
+        await databases.createDocument(
+            DATABASE_ID,
+            USER_RELATIONSHIPS_COLLECTION_ID,
+            ID.unique(),
+            { 
+              shareable_id: newShareCode, 
+              survivor_id: newUser.$id,
+              survivor_name: newUser.name 
+            },
+            [...readPermissions, ...userPermissions]
+        );
+      }
 
       await account.createEmailPasswordSession(email, password);
       onLoginSuccess();
@@ -94,20 +103,51 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         </div>
         <form className="space-y-6" onSubmit={isLoginView ? handleLogin : handleRegister}>
           {!isLoginView && (
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Name
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
+            <>
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  Name
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                    I am a...
+                </label>
+                <div className="mt-2 flex rounded-md shadow-sm">
+                    <button
+                        type="button"
+                        onClick={() => setRole('survivor')}
+                        className={`flex-1 px-4 py-2 text-sm font-medium border rounded-l-md transition-colors ${
+                            role === 'survivor'
+                            ? 'bg-blue-600 text-white border-blue-600 z-10 ring-1 ring-blue-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}
+                    >
+                        Stroke Survivor
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setRole('caregiver')}
+                        className={`flex-1 -ml-px px-4 py-2 text-sm font-medium border rounded-r-md transition-colors ${
+                            role === 'caregiver'
+                            ? 'bg-blue-600 text-white border-blue-600 z-10 ring-1 ring-blue-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        }`}
+                    >
+                        Companion / Caregiver
+                    </button>
+                </div>
+              </div>
+            </>
           )}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
