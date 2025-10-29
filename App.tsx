@@ -8,6 +8,7 @@ import Tasks from './components/Tasks';
 import Chat from './components/Chat';
 import Progress from './components/Progress';
 import Journal from './components/Journal';
+import MemoryGame from './components/MemoryGame';
 import VoiceInput from './components/VoiceInput';
 import Login from './components/Login';
 import type { Task, Message, JournalEntry, UserPrefs } from './types';
@@ -163,6 +164,8 @@ const App: React.FC = () => {
         setCurrentPage(Page.Chat);
     } else if (lowerCaseCommand.includes('go to progress')) {
         setCurrentPage(Page.Progress);
+    } else if (lowerCaseCommand.includes('go to memory game') || lowerCaseCommand.includes('play memory game')) {
+        setCurrentPage(Page.MemoryGame);
     }
   };
 
@@ -354,6 +357,8 @@ const App: React.FC = () => {
         return <Progress tasks={tasks} />;
       case Page.Journal:
         return <Journal journalEntries={journalEntries} onAddJournalEntry={addJournalEntry} />;
+      case Page.MemoryGame:
+        return <MemoryGame />;
       default:
         return <Home onNavigate={setCurrentPage} user={user} onLinkCompanion={handleLinkCompanion} />;
     }
@@ -377,7 +382,7 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-screen font-sans bg-gray-50">
       <Header currentPage={currentPage} onNavigate={setCurrentPage} onLogout={handleLogout} />
-      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 pt-20 pb-24">
         {renderPage()}
       </main>
       <VoiceInput onCommand={handleVoiceCommand} apiKey={apiKey} />

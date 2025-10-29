@@ -96,8 +96,20 @@ const Home: React.FC<HomeProps> = ({ onNavigate, user, onLinkCompanion }) => {
             onClick={() => onNavigate(PageEnum.Progress)}
         />
         <HomeCard
+            title="Journal"
+            description="Write down your thoughts and feelings."
+            icon={<JournalIcon />}
+            onClick={() => onNavigate(PageEnum.Journal)}
+        />
+        <HomeCard
+            title="Memory Game"
+            description="A fun exercise to train your memory."
+            icon={<GameIcon />}
+            onClick={() => onNavigate(PageEnum.MemoryGame)}
+        />
+        <HomeCard
             title="Companion App"
-            description="Visit the companion website for more resources."
+            description="Visit the companion website for resources."
             icon={<LinkIcon />}
             onClick={() => window.open('https://stroke-memory-app-companion-site.appwrite.network/', '_blank')}
         />
@@ -142,6 +154,19 @@ const ChatIcon = () => (
 const ProgressIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+    </svg>
+);
+
+const JournalIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>
+);
+
+const GameIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
 );
 

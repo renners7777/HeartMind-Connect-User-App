@@ -1,3 +1,4 @@
+
 import type { Models } from 'appwrite';
 
 export enum Page {
@@ -6,6 +7,7 @@ export enum Page {
   Chat = 'Chat',
   Progress = 'Progress',
   Journal = 'Journal',
+  MemoryGame = 'Memory Game',
 }
 
 // FIX: Added UserPrefs to strongly type user preferences from Appwrite.
