@@ -5,8 +5,10 @@ import {
     DATABASE_ID, 
     TASKS_COLLECTION_ID, 
     MESSAGES_COLLECTION_ID,
-    SHARES_COLLECTION_ID
+    SHARES_COLLECTION_ID,
+    JOURNAL_TABLE_COLLECTION_ID
 } from './appwriteConfig';
+import type { UserPrefs } from '../types';
 
 const APPWRITE_ENDPOINT = 'https://cloud.appwrite.io/v1';
 
@@ -25,7 +27,8 @@ export const databases = new Databases(client);
  * @returns The session object if the user is logged in, otherwise null.
  */
 // FIX: Replaced deprecated `Models.Account` with `Models.User` for Appwrite user type.
-export const getSession = async (): Promise<Models.User<Models.Preferences> | null> => {
+// FIX: Used strongly-typed UserPrefs for Appwrite user object.
+export const getSession = async (): Promise<Models.User<UserPrefs> | null> => {
     try {
         return await account.get();
     } catch {
@@ -44,4 +47,4 @@ export const logoutUser = async () => {
 export { ID };
 
 // Re-export IDs for a single point of import elsewhere in the app.
-export { DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, SHARES_COLLECTION_ID };
+export { DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, SHARES_COLLECTION_ID, JOURNAL_TABLE_COLLECTION_ID };

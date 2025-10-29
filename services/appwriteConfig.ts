@@ -26,7 +26,7 @@
 //      - Add attributes:
 //        - `text`: type `string`, size `255`, `required`
 //        - `completed`: type `boolean`, `required`, default value `false`
-//        - `creator_name`: type `string`, size `255`, `optional` (new)
+//        - `creator_name`: type `string`, size `255`, `optional`
 //
 //    - **Messages Collection**:
 //      - Create a collection named `messages_table`. Copy its "Collection ID" below.
@@ -34,7 +34,13 @@
 //        - `text`: type `string`, size `1024`, `required`
 //        - `sender`: type `string`, size `50`, `required`
 //
-//    - **Shares Collection (New)**:
+//    - **Journal Entries Collection (New)**:
+//      - Create a collection named `journal_table`. Copy its "Collection ID" below.
+//      - Add attributes:
+//        - `content`: type `string`, size `10000`, `required`
+//        - `shared_with_companion`: type `boolean`, `required`, default `false`
+//
+//    - **Shares Collection**:
 //      - Create a collection named `shares_table`. Copy its "Collection ID" below.
 //      - This collection is used by the companion app to make their shareable ID discoverable.
 //      - Add attributes:
@@ -47,7 +53,7 @@
 //      - Add role "All Users (role:all)" and grant them only READ access.
 //      - Add role "Any (role:any)" and grant them only CREATE access. (So only logged-in companions can create a share document).
 //
-//    - **For `reminders_table` and `messages_table`:**
+//    - **For `reminders_table`, `messages_table`, and `journal_table`:**
 //      - These will now use user-specific permissions, so no collection-level permissions are needed for "All Users".
 //
 // 6. **Add Web Platform for Local Development**:
@@ -65,6 +71,7 @@ export const DATABASE_ID = '68b213e7001400dc7f21';
 export const TASKS_COLLECTION_ID = 'reminders_table';
 export const MESSAGES_COLLECTION_ID = 'messages_table';
 export const SHARES_COLLECTION_ID = 'shares_table';
+export const JOURNAL_TABLE_COLLECTION_ID = 'journal_table';
 
 /**
  * A simple check to see if the user has updated the configuration placeholders.
@@ -76,5 +83,6 @@ export const isAppwriteConfigured = () => {
     return APPWRITE_PROJECT_ID.length > 0 &&
            DATABASE_ID.length > 0 &&
            TASKS_COLLECTION_ID.length > 0 &&
-           MESSAGES_COLLECTION_ID.length > 0;
+           MESSAGES_COLLECTION_ID.length > 0 &&
+           JOURNAL_TABLE_COLLECTION_ID.length > 0;
 };

@@ -1,17 +1,47 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Task } from '../types';
 
 interface TasksProps {
   tasks: Task[];
   onToggleTask: (id: string) => void;
+  onAddTask: (text: string) => void;
 }
 
-const Tasks: React.FC<TasksProps> = ({ tasks, onToggleTask }) => {
+const Tasks: React.FC<TasksProps> = ({ tasks, onToggleTask, onAddTask }) => {
+  const [newTaskText, setNewTaskText] = useState('');
   const incompleteTasks = tasks.filter(task => !task.completed);
   const completedTasks = tasks.filter(task => task.completed);
   
+  const handleAddTask = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newTaskText.trim()) {
+      onAddTask(newTaskText.trim());
+      setNewTaskText('');
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <div className="p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">Add a New Task</h2>
+        <form onSubmit={handleAddTask} className="flex items-center gap-2">
+            <input
+                type="text"
+                value={newTaskText}
+                onChange={(e) => setNewTaskText(e.target.value)}
+                placeholder="e.g., Take medication at 10 AM"
+                className="flex-grow w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+            <button
+                type="submit"
+                className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-colors"
+                disabled={!newTaskText.trim()}
+            >
+                Add
+            </button>
+        </form>
+      </div>
+
       <div className="p-6 bg-white rounded-lg shadow-md">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Today's Tasks</h2>
         {incompleteTasks.length > 0 ? (

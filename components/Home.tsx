@@ -1,12 +1,14 @@
+
 import React, { useState } from 'react';
 import type { Models } from 'appwrite';
-import type { Page } from '../types';
+import type { Page, UserPrefs } from '../types';
 import { Page as PageEnum } from '../types';
 
 interface HomeProps {
     onNavigate: (page: Page) => void;
     // FIX: Replaced deprecated `Models.Account` with `Models.User` for Appwrite user type.
-    user: Models.User<Models.Preferences> | null;
+    // FIX: Used strongly-typed UserPrefs for Appwrite user object.
+    user: Models.User<UserPrefs> | null;
     onLinkCompanion: (code: string) => Promise<void>;
 }
 

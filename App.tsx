@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Models } from 'appwrite';
 import { Permission, Query } from 'appwrite';
@@ -6,23 +7,25 @@ import Home from './components/Home';
 import Tasks from './components/Tasks';
 import Chat from './components/Chat';
 import Progress from './components/Progress';
+import Journal from './components/Journal';
 import VoiceInput from './components/VoiceInput';
 import Login from './components/Login';
-import type { Task, Message } from './types';
+import type { Task, Message, JournalEntry, UserPrefs } from './types';
 import { Page } from './types';
-import { client, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, SHARES_COLLECTION_ID, ID, account } from './services/appwrite';
+import { client, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, SHARES_COLLECTION_ID, JOURNAL_TABLE_COLLECTION_ID, ID, account } from './services/appwrite';
 import AppwriteError from './components/AppwriteError';
 import { initializeApiKey } from './services/apiKeyService';
 
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  // FIX: Replaced deprecated `Models.Account` with `Models.User` for Appwrite user type.
-  const [user, setUser] = useState<Models.User<Models.Preferences> | null>(null);
+  // FIX: Used strongly-typed UserPrefs for Appwrite user object.
+  const [user, setUser] = useState<Models.User<UserPrefs> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>(Page.Home);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [appwriteError, setAppwriteError] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
 
@@ -37,6 +40,10 @@ const App: React.FC = () => {
 
       const messageResponse = await databases.listDocuments(DATABASE_ID, MESSAGES_COLLECTION_ID, [Query.orderAsc('$createdAt')]);
       setMessages(messageResponse.documents as unknown as Message[]);
+
+      const journalResponse = await databases.listDocuments(DATABASE_ID, JOURNAL_TABLE_COLLECTION_ID, [Query.orderDesc('$createdAt')]);
+      setJournalEntries(journalResponse.documents as unknown as JournalEntry[]);
+
     } catch (error: any) {
         console.error("Failed to load user data:", error);
         if (error.type === 'network' || (error.message && error.message.toLowerCase().includes('network'))) {
@@ -71,23 +78,25 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!isLoggedIn) return;
 
-    const unsubscribeTasks = client.subscribe(`databases.${DATABASE_ID}.collections.${TASKS_COLLECTION_ID}.documents`, response => {
+    const subscriptions: (() => void)[] = [];
+
+    subscriptions.push(client.subscribe(`databases.${DATABASE_ID}.collections.${TASKS_COLLECTION_ID}.documents`, response => {
       const payload = response.payload as unknown as Task;
       const event = response.events[0];
 
       if (event.endsWith('create')) {
         setTasks(prevTasks => {
             if (prevTasks.some(t => t.$id === payload.$id)) return prevTasks;
-            return [...prevTasks, payload];
+            return [payload, ...prevTasks];
         });
       } else if (event.endsWith('update')) {
         setTasks(prevTasks => prevTasks.map(task => (task.$id === payload.$id ? payload : task)));
       } else if (event.endsWith('delete')) {
         setTasks(prevTasks => prevTasks.filter(task => task.$id !== payload.$id));
       }
-    });
+    }));
 
-    const unsubscribeMessages = client.subscribe(`databases.${DATABASE_ID}.collections.${MESSAGES_COLLECTION_ID}.documents`, response => {
+    subscriptions.push(client.subscribe(`databases.${DATABASE_ID}.collections.${MESSAGES_COLLECTION_ID}.documents`, response => {
         const payload = response.payload as unknown as Message;
         const event = response.events[0];
         
@@ -96,14 +105,26 @@ const App: React.FC = () => {
                 if (prevMessages.some(m => m.$id === payload.$id)) {
                     return prevMessages;
                 }
-                return [...prevMessages, payload].sort((a, b) => (a.$createdAt > b.$createdAt) ? 1 : -1);
+                return [...prevMessages, payload].sort((a, b) => (new Date(a.$createdAt).getTime() - new Date(b.$createdAt).getTime()));
             });
         }
-    });
+    }));
+    
+    subscriptions.push(client.subscribe(`databases.${DATABASE_ID}.collections.${JOURNAL_TABLE_COLLECTION_ID}.documents`, response => {
+        const payload = response.payload as unknown as JournalEntry;
+        const event = response.events[0];
+        
+        if (event.endsWith('create')) {
+            setJournalEntries(prevEntries => {
+                if (prevEntries.some(e => e.$id === payload.$id)) return prevEntries;
+                // Add new entry to the top of the list
+                return [payload, ...prevEntries];
+            });
+        }
+    }));
 
     return () => {
-      unsubscribeTasks();
-      unsubscribeMessages();
+      subscriptions.forEach(unsubscribe => unsubscribe());
     };
   }, [isLoggedIn]);
 
@@ -136,6 +157,8 @@ const App: React.FC = () => {
         setCurrentPage(Page.Home);
     } else if (lowerCaseCommand.includes('go to tasks')) {
         setCurrentPage(Page.Tasks);
+    } else if (lowerCaseCommand.includes('go to journal')) {
+        setCurrentPage(Page.Journal);
     } else if (lowerCaseCommand.includes('go to chat')) {
         setCurrentPage(Page.Chat);
     } else if (lowerCaseCommand.includes('go to progress')) {
@@ -192,18 +215,46 @@ const App: React.FC = () => {
   const sendMessage = async (text: string) => {
     if (!user) return;
     try {
-        const response = await databases.createDocument(
+        await databases.createDocument(
             DATABASE_ID, 
             MESSAGES_COLLECTION_ID, 
             ID.unique(), 
             { text, sender: 'user' }, 
             getPermissions()
         );
-        setMessages(prev => [...prev, response as unknown as Message]);
     } catch (error) {
       console.error("Failed to send message:", error);
     }
   };
+
+  const addJournalEntry = async (content: string, share: boolean) => {
+    if (!user) return;
+    try {
+        const userPerms = [
+            Permission.read(`user:${user.$id}`),
+            Permission.update(`user:${user.$id}`),
+            Permission.delete(`user:${user.$id}`),
+        ];
+
+        const finalPermissions = [...userPerms];
+        const caregiverId = user.prefs.caregiver_id;
+
+        if (share && caregiverId) {
+            finalPermissions.push(Permission.read(`user:${caregiverId}`));
+        }
+
+        await databases.createDocument(
+            DATABASE_ID,
+            JOURNAL_TABLE_COLLECTION_ID,
+            ID.unique(),
+            { content, shared_with_companion: share },
+            finalPermissions
+        );
+    } catch (error) {
+        console.error("Failed to add journal entry:", error);
+    }
+  };
+
 
   const handleLogout = async () => {
     try {
@@ -215,6 +266,7 @@ const App: React.FC = () => {
     setUser(null);
     setTasks([]);
     setMessages([]);
+    setJournalEntries([]);
     setCurrentPage(Page.Home);
   };
   
@@ -246,15 +298,16 @@ const App: React.FC = () => {
     });
 
     // 3. Update permissions on all existing documents
-    const companionPermissions = [
+    const companionReadUpdateDelete = [
         Permission.read(`user:${companionId}`),
         Permission.update(`user:${companionId}`),
         Permission.delete(`user:${companionId}`),
     ];
+    const companionRead = [Permission.read(`user:${companionId}`)];
 
     // Update all tasks
     for (const task of tasks) {
-        const newPermissions = [...new Set([...task.$permissions, ...companionPermissions])];
+        const newPermissions = [...new Set([...task.$permissions, ...companionReadUpdateDelete])];
         await databases.updateDocument(
             DATABASE_ID, TASKS_COLLECTION_ID, task.$id,
             undefined, newPermissions
@@ -263,12 +316,23 @@ const App: React.FC = () => {
 
     // Update all messages
     for (const message of messages) {
-      const newPermissions = [...new Set([...message.$permissions, ...companionPermissions])];
+      const newPermissions = [...new Set([...message.$permissions, ...companionReadUpdateDelete])];
         await databases.updateDocument(
             DATABASE_ID, MESSAGES_COLLECTION_ID, message.$id,
             undefined, newPermissions
         );
     }
+    
+    // Update all shared journal entries
+    const sharedJournalEntries = journalEntries.filter(entry => entry.shared_with_companion);
+    for (const entry of sharedJournalEntries) {
+        const newPermissions = [...new Set([...entry.$permissions, ...companionRead])];
+        await databases.updateDocument(
+            DATABASE_ID, JOURNAL_TABLE_COLLECTION_ID, entry.$id,
+            undefined, newPermissions
+        );
+    }
+
 
     // 4. Refresh user session and data to reflect changes
     await checkSession();
@@ -283,11 +347,13 @@ const App: React.FC = () => {
       case Page.Home:
         return <Home onNavigate={setCurrentPage} user={user} onLinkCompanion={handleLinkCompanion} />;
       case Page.Tasks:
-        return <Tasks tasks={tasks} onToggleTask={toggleTask} />;
+        return <Tasks tasks={tasks} onToggleTask={toggleTask} onAddTask={addTask} />;
       case Page.Chat:
         return <Chat messages={messages} onSendMessage={sendMessage} />;
       case Page.Progress:
         return <Progress tasks={tasks} />;
+      case Page.Journal:
+        return <Journal journalEntries={journalEntries} onAddJournalEntry={addJournalEntry} />;
       default:
         return <Home onNavigate={setCurrentPage} user={user} onLinkCompanion={handleLinkCompanion} />;
     }
