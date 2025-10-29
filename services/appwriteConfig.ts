@@ -21,7 +21,7 @@
 // 4. **Create Collections and Attributes**:
 //    - Inside your new database, create two Collections. After creating each, go to its "Attributes" tab to add fields.
 //
-//    - **Reminders Collection**:
+//    - **Tasks Collection**:
 //      - Create a collection named `reminders_table`. Copy its "Collection ID" below.
 //      - Add attributes:
 //        - `text`: type `string`, size `255`, `required`
@@ -48,18 +48,18 @@
 // =====================================================================
 
 
-export const APPWRITE_PROJECT_ID = 'PASTE_YOUR_PROJECT_ID_HERE';
-export const DATABASE_ID = 'PASTE_YOUR_DATABASE_ID_HERE';
-export const TASKS_COLLECTION_ID = 'PASTE_YOUR_REMINDERS_COLLECTION_ID_HERE';
-export const MESSAGES_COLLECTION_ID = 'PASTE_YOUR_MESSAGES_COLLECTION_ID_HERE';
+export const APPWRITE_PROJECT_ID = '68b201d3001d7dbcec43';
+export const DATABASE_ID = '68b213e7001400dc7f21';
+export const TASKS_COLLECTION_ID = 'reminders_table';
+export const MESSAGES_COLLECTION_ID = 'messages_table';
 
 /**
  * A simple check to see if the user has updated the configuration placeholders.
  * @returns {boolean} True if the project appears to be configured.
  */
 export const isAppwriteConfigured = () => {
-    return APPWRITE_PROJECT_ID !== 'PASTE_YOUR_PROJECT_ID_HERE' &&
-           DATABASE_ID !== 'PASTE_YOUR_DATABASE_ID_HERE' &&
-           TASKS_COLLECTION_ID !== 'PASTE_YOUR_REMINDERS_COLLECTION_ID_HERE' &&
-           MESSAGES_COLLECTION_ID !== 'PASTE_YOUR_MESSAGES_COLLECTION_ID_HERE';
+    return APPWRITE_PROJECT_ID !== '68b201d3001d7dbcec43' &&
+           DATABASE_ID !== '68b213e7001400dc7f21' &&
+           TASKS_COLLECTION_ID !== 'reminders_table' &&
+           MESSAGES_COLLECTION_ID !== 'messages_table';
 };
