@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stroke Support Companion</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Polyfill 'process' for browser environments to prevent crashes from
+      // code that expects a Node.js-like environment.
+      if (typeof process === 'undefined') {
+        window.process = { env: {} };
+      }
+    </script>
   <script type="importmap">
 {
   "imports": {

@@ -10,6 +10,7 @@ import { Page } from './types';
 import { client, databases, getSession, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, ID } from './services/appwrite';
 import { Query } from 'appwrite';
 import AppwriteError from './components/AppwriteError';
+import { initializeApiKey } from './services/apiKeyService';
 
 
 const App: React.FC = () => {
@@ -18,11 +19,16 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [appwriteError, setAppwriteError] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
 
   useEffect(() => {
     const init = async () => {
       try {
         setAppwriteError(false);
+        // Initialize API Key for Gemini
+        const key = initializeApiKey();
+        setApiKey(key);
+
         await getSession();
 
         const taskResponse = await databases.listDocuments(DATABASE_ID, TASKS_COLLECTION_ID);
@@ -175,7 +181,7 @@ const App: React.FC = () => {
       <main className="flex-1 overflow-y-auto p-4 md:p-6">
         {renderPage()}
       </main>
-      <VoiceInput onCommand={handleVoiceCommand} />
+      <VoiceInput onCommand={handleVoiceCommand} apiKey={apiKey} />
     </div>
   );
 };

@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, Blob } from '@google/genai';
 import { encode, decode, decodeAudioData } from '../services/audioUtils';
+import { getApiKey } from '../services/apiKeyService';
 
 interface VoiceInputProps {
   onCommand: (command: string) => void;
+  apiKey: string | null;
 }
 
-const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand }) => {
+const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
   const [isListening, setIsListening] = useState(false);
   const [status, setStatus] = useState('Tap to Speak');
   const sessionRef = useRef<LiveSession | null>(null);
@@ -22,6 +24,14 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand }) => {
   // For playing back AI audio response
   const audioQueueRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const nextStartTimeRef = useRef(0);
+
+  useEffect(() => {
+    if (!apiKey) {
+      setStatus('API Key needed');
+    } else {
+      setStatus('Tap to Speak');
+    }
+  }, [apiKey]);
 
 
   const stopListening = useCallback((sendCommand = true) => {
@@ -49,15 +59,27 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand }) => {
 
 
     setIsListening(false);
-    setStatus('Tap to Speak');
+    setStatus(apiKey ? 'Tap to Speak' : 'API Key needed');
     if (sendCommand && transcriptionRef.current.trim()) {
       onCommand(transcriptionRef.current.trim());
     }
     transcriptionRef.current = '';
     nextStartTimeRef.current = 0;
-  }, [onCommand]);
+  }, [onCommand, apiKey]);
 
   const startListening = async () => {
+    const currentApiKey = getApiKey();
+    if (!currentApiKey) {
+        // The service will prompt the user if no key is found.
+        // If they cancel, we shouldn't proceed.
+        // Re-check in case the prompt was successful.
+        if(!getApiKey()) {
+            console.error("Cannot start voice input without an API key.");
+            setStatus("API Key required");
+            return;
+        }
+    }
+
     if (isListening) {
       stopListening(true);
       return;
@@ -67,7 +89,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand }) => {
       setIsListening(true);
       setStatus('Connecting...');
       
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: currentApiKey });
       inputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       outputAudioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
 
@@ -169,12 +191,18 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const isButtonDisabled = !apiKey;
+
   return (
     <div className="sticky bottom-0 bg-white p-4 border-t-2 border-blue-200 flex flex-col items-center justify-center">
       <button
         onClick={startListening}
+        disabled={isButtonDisabled}
         className={`relative rounded-full transition-all duration-300 ease-in-out flex items-center justify-center
-          ${isListening ? 'w-20 h-20 bg-red-500 hover:bg-red-600 animate-pulse' : 'w-16 h-16 bg-blue-600 hover:bg-blue-700'}`}
+          ${isListening ? 'w-20 h-20 bg-red-500 hover:bg-red-600 animate-pulse' : 'w-16 h-16 bg-blue-600 hover:bg-blue-700'}
+          ${isButtonDisabled ? 'bg-gray-400 cursor-not-allowed' : ''}
+          `}
+        aria-label={isListening ? "Stop listening" : "Start listening"}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
