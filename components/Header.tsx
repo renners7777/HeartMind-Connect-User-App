@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Page } from '../types';
-import logoUrl from '@/public/logo.png';
+import logoUrl from '@/src/assets/logo.png';
 
 interface HeaderProps {
   currentPage: Page;
