@@ -8,7 +8,7 @@ interface HeaderProps {
   onLogout: () => void;
 }
 
-const logoUrl = '/logo.png';
+const logoUrl = 'logo.png';
 
 const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate, onLogout }) => {
   return (
