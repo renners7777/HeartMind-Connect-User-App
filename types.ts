@@ -7,6 +7,7 @@ export enum Page {
   Progress = 'Progress',
   Journal = 'Journal',
   MemoryGame = 'Memory Game',
+  Testing = 'Testing Panel',
 }
 
 // FIX: Added UserPrefs to strongly type user preferences from Appwrite.

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { Page } from '../types';
 import { Page as PageEnum } from '../types';
@@ -9,7 +8,7 @@ interface HeaderProps {
   onLogout: () => void;
 }
 
-const logoUrl = '/Stroke Survivor App Logo HeartMind Connect.png';
+const logoUrl = '/logo.png';
 
 const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate, onLogout }) => {
   return (

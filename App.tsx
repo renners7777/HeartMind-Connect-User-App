@@ -8,6 +8,7 @@ import Chat from './components/Chat';
 import Progress from './components/Progress';
 import Journal from './components/Journal';
 import MemoryGame from './components/MemoryGame';
+import TestingPanel from './components/TestingPanel';
 import VoiceInput from './components/VoiceInput';
 import Login from './components/Login';
 import type { Task, Message, JournalEntry, UserPrefs } from './types';
@@ -278,6 +279,37 @@ const App: React.FC = () => {
     }
   };
 
+  const sendCompanionMessage = async (text: string) => {
+    if (!user) return;
+    try {
+        await databases.createDocument(
+            DATABASE_ID,
+            MESSAGES_COLLECTION_ID,
+            ID.unique(),
+            { text, sender: 'companion' },
+            getPermissions()
+        );
+    } catch (error) {
+        console.error("Failed to send companion message:", error);
+    }
+  };
+
+  const addCompanionTask = async (text: string) => {
+    if (!user) return;
+    const companionName = user.prefs.caregiver_name || 'Companion';
+    try {
+        await databases.createDocument(
+            DATABASE_ID,
+            TASKS_COLLECTION_ID,
+            ID.unique(),
+            { text, completed: false, creator_name: companionName },
+            getPermissions()
+        );
+    } catch (error) {
+        console.error("Failed to add companion task:", error);
+    }
+  };
+
 
   const handleLogout = async () => {
     try {
@@ -314,6 +346,8 @@ const App: React.FC = () => {
         return <Journal journalEntries={journalEntries} onAddJournalEntry={addJournalEntry} />;
       case Page.MemoryGame:
         return <MemoryGame />;
+      case Page.Testing:
+        return <TestingPanel user={user} onSendCompanionMessage={sendCompanionMessage} onAddCompanionTask={addCompanionTask} />;
       default:
         return <Home onNavigate={setCurrentPage} user={user} shareableCode={shareableCode} />;
     }
