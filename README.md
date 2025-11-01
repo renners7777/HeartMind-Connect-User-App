@@ -25,7 +25,7 @@ The journey of recovery after a stroke presents unique challenges. This applicat
 
 ## Getting Started
 
-To run this application locally, you must first set up your own backend using Appwrite Cloud. This is a free and necessary step to store your app's data.
+To run this application, you must first configure your backend and API key.
 
 ### 1. Set Up Your Appwrite Backend
 
@@ -34,13 +34,20 @@ First, follow the detailed setup instructions in the configuration file:
 1. In your code editor, open the file: `services/appwriteConfig.ts`
 2. Follow all the steps written in the comments at the top of that file. This will guide you through:
     * Creating a free Appwrite project.
-    * Creating a database and the required collections (`reminders_table`, `messages_table`).
+    * Creating a database and the required collections.
     * Adding the necessary attributes (`text`, `completed`, etc.) to your collections.
     * Setting the correct permissions so your app can access the data.
     * Adding `localhost` as an allowed hostname for local development.
 3. Once you have completed the steps, **paste your new Project, Database, and Collection IDs into `services/appwriteConfig.ts`** and save the file.
 
-### 2. Run the Application Locally
+### 2. Configure Google AI API Key
+
+This application uses the Google Gemini API for its voice features. Your API key must be available to the application as an environment variable named `API_KEY`.
+
+*   You can get a free API key from [Google AI Studio](https://aistudio.google.com/).
+*   The execution environment is responsible for making this key available as `process.env.API_KEY`. When developing in Google AI Studio, this is handled automatically.
+
+### 3. Run the Application Locally
 
 Once your backend is configured, you can run the front-end application.
 
@@ -53,10 +60,3 @@ Once your backend is configured, you can run the front-end application.
     ```
 
     This will start a local web server, typically at `http://localhost:3000`. Open this URL in your browser.
-
-### 3. Provide Google AI API Key
-
-The first time you try to use the voice input feature (the microphone button), the application will prompt you to enter your Google AI API Key. This key is required for the voice command functionality.
-
-* You can get a free API key from [Google AI Studio](https://aistudio.google.com/).
-* The key will be stored securely in your browser's local storage for future sessions, so you only need to enter it once.
