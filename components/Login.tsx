@@ -63,8 +63,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             Permission.update(`user:${newUser.$id}`),
             Permission.delete(`user:${newUser.$id}`),
         ];
-        // Let any authenticated user read this document to find the user by shareable_id
-        const readPermissions = [Permission.read('role:users')];
+        // Let any guest user read this document to find the user by shareable_id
+        const readPermissions = [Permission.read('role:all')];
 
         await databases.createDocument(
             DATABASE_ID,

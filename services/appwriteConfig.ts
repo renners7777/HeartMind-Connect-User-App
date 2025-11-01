@@ -45,7 +45,7 @@
 // 5. **Configure Permissions**:
 //    - **For the `user_relationships_table` collection:**
 //      - Go to its "Settings" -> "Permissions".
-//      - Add role "Users" (Authenticated Users) and grant them READ access. This is crucial so the companion app can look up the shareable code.
+//      - Add role "any" (Guests/Public) and grant them READ access. This is crucial so the companion app can look up the shareable code before the user logs in.
 //
 //    - **For `reminders_table`, `messages_table`, and `journal_table`:**
 //      - No collection-level permissions are needed here, as document-level permissions are handled by the app code.
