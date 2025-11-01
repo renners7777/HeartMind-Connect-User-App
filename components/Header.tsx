@@ -9,7 +9,7 @@ interface HeaderProps {
   onLogout: () => void;
 }
 
-const logoUrl = '/public/Stroke Survivor App Logo HeartMind Connect.png';
+const logoUrl = '/Stroke Survivor App Logo HeartMind Connect.png';
 
 const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate, onLogout }) => {
   return (
