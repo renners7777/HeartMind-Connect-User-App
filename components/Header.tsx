@@ -9,7 +9,7 @@ interface HeaderProps {
   onLogout: () => void;
 }
 
-const logoUrl = '/public/logo.svg';
+const logoUrl = '/logo.svg';
 
 const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate, onLogout }) => {
   return (

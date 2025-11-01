@@ -15,6 +15,7 @@ interface HomeProps {
 const Home: React.FC<HomeProps> = ({ onNavigate, user, shareableCode }) => {
   const [copied, setCopied] = useState(false);
   const caregiverName = user?.prefs.caregiver_name;
+  const isSurvivor = user?.prefs?.role === 'survivor';
 
   const handleCopyToClipboard = () => {
     if (shareableCode) {
@@ -34,46 +35,48 @@ const Home: React.FC<HomeProps> = ({ onNavigate, user, shareableCode }) => {
         </p>
       </div>
 
-      {caregiverName ? (
-        <div className="p-6 bg-green-50 border border-green-200 rounded-lg shadow-sm text-center">
-            <p className="text-green-800 font-medium">
-                You are linked with your companion, <span className="font-bold">{caregiverName}</span>.
-            </p>
-        </div>
-      ) : (
-        <div className="p-6 bg-white rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-gray-800 mb-1">Link with a Companion</h3>
-            <p className="text-gray-600 mb-4">Share this code with your companion. They can use it in their app to connect with you.</p>
-            {shareableCode ? (
-                <div className="flex items-center gap-2 p-3 bg-gray-100 rounded-md border">
-                    <p className="flex-grow text-2xl font-bold tracking-widest text-blue-700 font-mono text-center">
-                        {shareableCode}
-                    </p>
-                    <button 
-                        onClick={handleCopyToClipboard}
-                        className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center gap-2"
-                        aria-label="Copy code to clipboard"
-                    >
-                        {copied ? (
-                           <>
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                             <span>Copied!</span>
-                           </>
-                        ) : (
+      {isSurvivor && (
+        caregiverName ? (
+            <div className="p-6 bg-green-50 border border-green-200 rounded-lg shadow-sm text-center">
+                <p className="text-green-800 font-medium">
+                    You are linked with your companion, <span className="font-bold">{caregiverName}</span>.
+                </p>
+            </div>
+        ) : (
+            <div className="p-6 bg-white rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold text-gray-800 mb-1">Link with a Companion</h3>
+                <p className="text-gray-600 mb-4">Share this code with your companion. They can use it in their app to connect with you.</p>
+                {shareableCode ? (
+                    <div className="flex items-center gap-2 p-3 bg-gray-100 rounded-md border">
+                        <p className="flex-grow text-2xl font-bold tracking-widest text-blue-700 font-mono text-center">
+                            {shareableCode}
+                        </p>
+                        <button 
+                            onClick={handleCopyToClipboard}
+                            className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center gap-2"
+                            aria-label="Copy code to clipboard"
+                        >
+                            {copied ? (
                             <>
-                               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                               <span>Copy</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                <span>Copied!</span>
                             </>
-                        )}
-                    </button>
-                </div>
-            ) : (
-                <div className="text-center text-gray-500 p-4">
-                    <div className="w-6 h-6 border-2 border-dashed rounded-full animate-spin border-blue-600 mx-auto"></div>
-                    <p className="mt-2">Loading your code...</p>
-                </div>
-            )}
-        </div>
+                            ) : (
+                                <>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                <span>Copy</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="text-center text-gray-500 p-4">
+                        <div className="w-6 h-6 border-2 border-dashed rounded-full animate-spin border-blue-600 mx-auto"></div>
+                        <p className="mt-2">Loading your code...</p>
+                    </div>
+                )}
+            </div>
+        )
       )}
 
 
