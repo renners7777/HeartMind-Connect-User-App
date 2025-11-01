@@ -1,14 +1,12 @@
 import React from 'react';
 import type { Page } from '../types';
-import { Page as PageEnum } from '../types';
+import logoUrl from '/logo.png';
 
 interface HeaderProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
   onLogout: () => void;
 }
-
-const logoUrl = '/logo.png';
 
 const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate, onLogout }) => {
   return (
