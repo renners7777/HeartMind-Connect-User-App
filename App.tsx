@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import type { Models } from 'appwrite';
 import { Permission, Query } from 'appwrite';
@@ -338,7 +337,7 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-screen font-sans bg-gray-50">
       <Header currentPage={currentPage} onNavigate={setCurrentPage} onLogout={handleLogout} />
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 pt-24 pb-36">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6 mt-16 pb-36">
         {renderPage()}
       </main>
       <VoiceInput onCommand={handleVoiceCommand} apiKey={apiKey} />
