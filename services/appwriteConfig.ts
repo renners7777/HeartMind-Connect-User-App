@@ -32,9 +32,8 @@
 //      - Create a collection named `journal_table`. Copy its "Collection ID" below.
 //      - Attributes: `content` (string, 10000, required), `shared_with_companion` (boolean, required, default: false).
 //
-//    - **User Relationships Collection (NEW)**:
+//    - **User Relationships Collection**:
 //      - Create a collection named `user_relationships_table`. Copy its "Collection ID" below.
-//      - This is the central table for linking survivors and companions.
 //      - Attributes:
 //        - `survivor_id`: type `string`, size `255`, `required`.
 //        - `survivor_name`: type `string`, size `255`, `required`.
@@ -50,13 +49,42 @@
 //    - **For `reminders_table`, `messages_table`, and `journal_table`:**
 //      - No collection-level permissions are needed here, as document-level permissions are handled by the app code.
 //
-// 6. **Add Web Platform**:
-//    - Go to your project dashboard's main page.
-//    - Click "Add Platform" and choose "Web App".
-//    - For "Hostname", enter `localhost` (for local development).
+// 6. **Add Web Platforms**:
+//    - Go to your project's main dashboard. In the "Platforms" section, click "Add Platform" and choose "Web App".
+//    - **Platform 1 (Local Development)**:
+//      - Name: `Local App`, Hostname: `localhost`
+//    - Click "Add Platform" again.
+//    - **Platform 2 (Companion App)**:
+//      - Name: `Companion App`, Hostname: `stroke-memory-app-companion-site.appwrite.network`
+//    - **IMPORTANT**: If you have deployed this main app to a URL other than localhost, you must add its hostname here as well.
 //
 // 7. **Save and Refresh**:
 //    - Save this file with your new IDs, then refresh the application.
+// =====================================================================
+
+
+// =====================================================================
+// **TROUBLESHOOTING: Companion App Login Error**
+// =====================================================================
+// If the companion app shows a "missing scopes" or permission error
+// when a caregiver tries to link with a survivor, it's likely due to
+// incorrect permissions on an EXISTING record in your database.
+//
+// **How to Fix**:
+//
+// 1. Go to your Appwrite project -> Databases -> [Your Database].
+// 2. Open the `user_relationships_table` collection.
+// 3. Find the document for the survivor you are trying to link with.
+// 4. On the right side of the document view, find the "Permissions" box.
+// 5. Click "Add permission".
+// 6. For "Who has access?", select "Anyone (role:all)".
+// 7. For "Permissions", check the "Read" box ONLY.
+// 8. Click "Add".
+//
+// The document should now have `read("role:all")` in its permissions list.
+// This allows the companion app to find the survivor using the share code
+// *before* the caregiver logs in. New survivor accounts created in the app
+// will have this permission set automatically.
 // =====================================================================
 
 
