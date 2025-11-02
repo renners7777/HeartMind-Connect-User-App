@@ -5,6 +5,7 @@ import { Permission, Query, AppwriteException } from 'appwrite';
 import styled, { keyframes } from 'styled-components';
 import Layout from './components/Layout';
 import Home from './components/Home';
+import Footer from './components/Footer';
 import Tasks from './components/Tasks';
 import Chat from './components/Chat';
 import Progress from './components/Progress';
@@ -13,6 +14,7 @@ import MemoryGame from './components/MemoryGame';
 import TestingPanel from './components/TestingPanel';
 import VoiceInput from './components/VoiceInput';
 import Login from './components/Login';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import type { Task, Message, JournalEntry, UserPrefs } from './types';
 import { Page } from './types';
 import { client, account, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, USER_RELATIONSHIPS_COLLECTION_ID, JOURNAL_TABLE_COLLECTION_ID, ID } from './services/appwrite';
@@ -22,7 +24,7 @@ import { initializeApiKey } from './services/apiKeyService';
 const AppContainer = styled.div`
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   font-family: sans-serif;
   background-color: #f9fafb;
 `;
@@ -58,6 +60,17 @@ const LoadingText = styled.p`
   font-size: 1.25rem;
   color: #4b5563;
   margin-top: 1rem;
+`;
+
+const UnauthenticatedContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f9fafb;
+`;
+
+const MainContent = styled.main`
+    flex-grow: 1;
 `;
 
 
@@ -452,28 +465,49 @@ const App: React.FC = () => {
     );
   }
 
-  if (!isLoggedIn) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
-  }
-
   if (appwriteError) {
       return <AppwriteError />;
   }
   
   return (
     <AppContainer>
-      <Routes>
-        <Route element={<Layout onLogout={handleLogout} />}>
-          <Route index element={<Home user={user} shareableCode={shareableCode} onLinkAccount={linkAccount} />} />
-          <Route path={Page.Tasks} element={<Tasks tasks={tasks} onToggleTask={toggleTask} onAddTask={addTask} />} />
-          <Route path={Page.Chat} element={<Chat messages={messages} onSendMessage={sendMessage} />} />
-          <Route path={Page.Progress} element={<Progress tasks={tasks} />} />
-          <Route path={Page.Journal} element={<Journal journalEntries={journalEntries} onAddJournalEntry={addJournalEntry} />} />
-          <Route path={Page.MemoryGame} element={<MemoryGame />} />
-          <Route path={Page.Testing} element={<TestingPanel user={user} onSendCompanionMessage={sendCompanionMessage} onAddCompanionTask={addCompanionTask} />} />
-        </Route>
-      </Routes>
-      <VoiceInput onCommand={handleVoiceCommand} apiKey={apiKey} />
+        <Routes>
+            {!isLoggedIn ? (
+                <>
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="*" element={
+                        <UnauthenticatedContainer>
+                            <MainContent>
+                                <Login onLoginSuccess={handleLoginSuccess} />
+                            </MainContent>
+                            <Footer />
+                        </UnauthenticatedContainer>
+                    } />
+                </>
+            ) : (
+                <>
+                    <Route element={<Layout onLogout={handleLogout} />}>
+                        <Route index element={<Home user={user} shareableCode={shareableCode} onLinkAccount={linkAccount} />} />
+                        <Route path={Page.Tasks} element={<Tasks tasks={tasks} onToggleTask={toggleTask} onAddTask={addTask} />} />
+                        <Route path={Page.Chat} element={<Chat messages={messages} onSendMessage={sendMessage} />} />
+                        <Route path={Page.Progress} element={<Progress tasks={tasks} />} />
+                        <Route path={Page.Journal} element={<Journal journalEntries={journalEntries} onAddJournalEntry={addJournalEntry} />} />
+                        <Route path={Page.MemoryGame} element={<MemoryGame />} />
+                        <Route path={Page.Testing} element={<TestingPanel user={user} onSendCompanionMessage={sendCompanionMessage} onAddCompanionTask={addCompanionTask} />} />
+                        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    </Route>
+                    <Route path="/login" element={
+                        <UnauthenticatedContainer>
+                            <MainContent>
+                                <Login onLoginSuccess={handleLoginSuccess} />
+                            </MainContent>
+                            <Footer />
+                        </UnauthenticatedContainer>
+                    } />
+                </>
+            )}
+        </Routes>
+        {isLoggedIn && <VoiceInput onCommand={handleVoiceCommand} apiKey={apiKey} />}
     </AppContainer>
   );
 };
