@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, Blob } from '@google/genai';
+import styled, { keyframes } from 'styled-components';
+import { GoogleGenAI, LiveServerMessage, Modality, Blob } from '@google/genai';
 import { encode, decode, decodeAudioData } from '../services/audioUtils';
 import { getApiKey } from '../services/apiKeyService';
 
@@ -8,12 +9,84 @@ interface VoiceInputProps {
   apiKey: string | null;
 }
 
+// Keyframes for the pulse animation
+const pulse = keyframes`
+  50% {
+    opacity: .5;
+  }
+`;
+
+const VoiceInputContainer = styled.div`
+  position: sticky;
+  bottom: 0;
+  background-color: white;
+  padding: 1rem;
+  border-top: 2px solid #bfdbfe; // blue-200
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+`;
+
+const ListenButton = styled.button<{ isListening: boolean; disabled: boolean }>`
+  position: relative;
+  border-radius: 9999px;
+  transition: all 0.3s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+
+  ${({ isListening, disabled }) => {
+    if (disabled) {
+      return `
+        width: 4rem;
+        height: 4rem;
+        background-color: #9ca3af; // gray-400
+        cursor: not-allowed;
+      `;
+    }
+    if (isListening) {
+      return `
+        width: 5rem; // w-20
+        height: 5rem; // h-20
+        background-color: #ef4444; // red-500
+        animation: ${pulse} 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        &:hover {
+          background-color: #dc2626; // red-600
+        }
+      `;
+    }
+    return `
+      width: 4rem; // w-16
+      height: 4rem; // h-16
+      background-color: #2563eb; // blue-600
+      &:hover {
+        background-color: #1d4ed8; // blue-700
+      }
+    `;
+  }}
+`;
+
+const MicIcon = styled.svg`
+  height: 2rem; // h-8
+  width: 2rem; // w-8
+  color: white;
+`;
+
+const StatusText = styled.p`
+  color: #4b5563; // text-gray-600
+  margin-top: 0.5rem; // mt-2
+  font-size: 0.875rem; // text-sm
+  font-weight: 500; // font-medium
+`;
+
 const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
   const [isListening, setIsListening] = useState(false);
   const [status, setStatus] = useState('Tap to Speak');
-  const sessionRef = useRef<LiveSession | null>(null);
+  const sessionRef = useRef<any | null>(null); // FIX: Using any to avoid build error
   
-  // Audio contexts for input (mic) and output (speaker)
   const inputAudioContextRef = useRef<AudioContext | null>(null);
   const outputAudioContextRef = useRef<AudioContext | null>(null);
   
@@ -21,7 +94,6 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const transcriptionRef = useRef('');
 
-  // For playing back AI audio response
   const audioQueueRef = useRef<Set<AudioBufferSourceNode>>(new Set());
   const nextStartTimeRef = useRef(0);
 
@@ -51,9 +123,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
       inputAudioContextRef.current.close();
       inputAudioContextRef.current = null;
     }
-     // Don't close the output context, as audio might still be playing
     
-    // Stop any currently playing audio from the AI
     audioQueueRef.current.forEach(source => source.stop());
     audioQueueRef.current.clear();
 
@@ -69,7 +139,6 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
 
   const startListening = async () => {
     const currentApiKey = getApiKey();
-    // Fix: Updated API key check to align with new service which does not prompt the user.
     if (!currentApiKey) {
         console.error("Cannot start voice input without an API key.");
         setStatus("API Key required");
@@ -120,7 +189,6 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
               transcriptionRef.current += message.serverContent.inputTranscription.text;
             }
 
-            // Handle audio response from the model
             const audioData = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
             if (audioData && outputAudioContextRef.current) {
                 const decodedAudio = decode(audioData);
@@ -165,8 +233,8 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
           inputAudioTranscription: {},
           systemInstruction: `You are a friendly AI assistant for a stroke survivor. 
           Your role is to help them manage tasks, send messages, and navigate the app. 
-          When they add a task or send a message, confirm the action clearly. For example, if they say 'add task call the doctor', you should respond 'Okay, I've added "call the doctor" to your tasks.'
-          When they ask to navigate, confirm the navigation. For example, if they say 'go to chat', respond 'Going to the chat screen.'
+          When they add a task or send a message, confirm the action clearly. For example, if they say 'add task call the doctor', you should respond 'Okay, I\'ve added "call the doctor" to your tasks.\'
+          When they ask to navigate, confirm the navigation. For example, if they say \'go to chat\', respond \'Going to the chat screen.\'
           Keep responses concise, clear, and reassuring.`,
         },
       });
@@ -187,25 +255,23 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
   const isButtonDisabled = !apiKey;
 
   return (
-    <div className="sticky bottom-0 bg-white p-4 border-t-2 border-blue-200 flex flex-col items-center justify-center">
-      <button
+    <VoiceInputContainer>
+      <ListenButton
         onClick={startListening}
         disabled={isButtonDisabled}
-        className={`relative rounded-full transition-all duration-300 ease-in-out flex items-center justify-center
-          ${isListening ? 'w-20 h-20 bg-red-500 hover:bg-red-600 animate-pulse' : 'w-16 h-16 bg-blue-600 hover:bg-blue-700'}
-          ${isButtonDisabled ? 'bg-gray-400 cursor-not-allowed' : ''}
-          `}
+        isListening={isListening}
         aria-label={isListening ? "Stop listening" : "Start listening"}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <MicIcon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-        </svg>
-      </button>
-      <p className="text-gray-600 mt-2 text-sm font-medium">{status}</p>
-    </div>
+        </MicIcon>
+      </ListenButton>
+      <StatusText>{status}</StatusText>
+    </VoiceInputContainer>
   );
 };
 

@@ -9,18 +9,43 @@ import { Page as PageEnum } from '../types';
 interface HomeProps {
     user: Models.User<UserPrefs> | null;
     shareableCode: string | null;
+    onLinkAccount: (shareableId: string) => Promise<void>;
 }
 
-const Home: React.FC<HomeProps> = ({ user, shareableCode }) => {
+const Home: React.FC<HomeProps> = ({ user, shareableCode, onLinkAccount }) => {
   const [copied, setCopied] = useState(false);
+  const [linkingCode, setLinkingCode] = useState('');
+  const [isLinking, setIsLinking] = useState(false);
+  const [linkingError, setLinkingError] = useState('');
+
   const caregiverName = user?.prefs.caregiver_name;
+  const survivorName = user?.prefs.survivor_name;
   const isSurvivor = user?.prefs?.role === 'survivor';
+  const isCaregiver = user?.prefs?.role === 'caregiver';
 
   const handleCopyToClipboard = () => {
     if (shareableCode) {
         navigator.clipboard.writeText(shareableCode);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+    }
+  };
+
+  const handleLinkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkingCode.trim()) {
+        setLinkingError('Please enter a code.');
+        return;
+    }
+    setIsLinking(true);
+    setLinkingError('');
+    try {
+        await onLinkAccount(linkingCode.trim().toUpperCase());
+        // On success, App.tsx will refresh data and this component will re-render
+    } catch (error: any) {
+        setLinkingError(error.message || 'Failed to link account. Please check the code and try again.');
+    } finally {
+        setIsLinking(false);
     }
   };
 
@@ -33,6 +58,7 @@ const Home: React.FC<HomeProps> = ({ user, shareableCode }) => {
         </WelcomeText>
       </WelcomeBanner>
 
+      {/* For Survivors */}
       {isSurvivor && (
         caregiverName ? (
             <LinkedBanner>
@@ -70,6 +96,36 @@ const Home: React.FC<HomeProps> = ({ user, shareableCode }) => {
                     </LoadingContainer>
                 )}
             </ShareContainer>
+        )
+      )}
+
+      {/* For Caregivers */}
+      {isCaregiver && (
+        survivorName ? (
+            <LinkedBanner>
+                <p>
+                    You are linked with <strong>{survivorName}</strong>. You can now manage their tasks and chat with them.
+                </p>
+            </LinkedBanner>
+        ) : (
+            <LinkFormContainer>
+                <ShareTitle>Link with a Survivor</ShareTitle>
+                <ShareText>Enter the 6-digit code provided by the person you are caring for to link your accounts.</ShareText>
+                <LinkForm onSubmit={handleLinkSubmit}>
+                    <LinkInput
+                        type="text"
+                        value={linkingCode}
+                        onChange={(e) => setLinkingCode(e.target.value)}
+                        placeholder="ENTER CODE"
+                        maxLength={6}
+                        disabled={isLinking}
+                    />
+                    {linkingError && <LinkErrorText>{linkingError}</LinkErrorText>}
+                    <LinkButton type="submit" disabled={isLinking}>
+                        {isLinking ? 'Linking...' : 'Link Account'}
+                    </LinkButton>
+                </LinkForm>
+            </LinkFormContainer>
         )
       )}
 
@@ -181,13 +237,12 @@ const WelcomeText = styled.p`
 
 const LinkedBanner = styled.div`
     padding: 1.5rem;
-    background-color: #f0fdf4;
-    border: 1px solid #bbf7d0;
+    background-color: #f0fdf4; // green-50
+    border: 1px solid #bbf7d0; // green-200
     border-radius: 0.5rem;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     text-align: center;
     margin-bottom: 1.5rem;
-    color: #166534;
+    color: #166534; // green-800
     font-weight: 500;
 `;
 
@@ -240,12 +295,6 @@ const CopyButton = styled.button`
     &:hover {
         background-color: #1d4ed8;
     }
-    &:focus {
-        outline: 2px solid transparent;
-        outline-offset: 2px;
-        box-shadow: 0 0 0 2px #3b82f6;
-    }
-    transition: background-color 0.2s;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -255,6 +304,62 @@ const LoadingContainer = styled.div`
     text-align: center;
     color: #6b7280;
     padding: 1rem;
+`;
+
+const LinkFormContainer = styled.div`
+    padding: 1.5rem;
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    margin-bottom: 1.5rem;
+`;
+
+const LinkForm = styled.form`
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+`;
+
+const LinkInput = styled.input`
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-family: monospace;
+  text-transform: uppercase;
+  text-align: center;
+  font-size: 1.25rem;
+  letter-spacing: 0.2em;
+
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-color: #3b82f6;
+  }
+`;
+
+const LinkButton = styled.button`
+    padding: 0.75rem 1rem;
+    background-color: #16a34a;
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    
+    &:hover {
+        background-color: #15803d;
+    }
+    &:disabled {
+        background-color: #86efac;
+        cursor: not-allowed;
+    }
+`;
+
+const LinkErrorText = styled.p`
+    color: #dc2626;
+    font-size: 0.875rem;
+    text-align: center;
 `;
 
 const Grid = styled.div`
@@ -299,47 +404,52 @@ const CardDescription = styled.p`
     margin-top: 0.25rem;
 `;
 
+const SvgIcon = styled.svg`
+    height: 2rem;
+    width: 2rem;
+`;
+
 const TasksIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <SvgIcon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-    </svg>
+    </SvgIcon>
 );
 
 const ChatIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <SvgIcon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-    </svg>
+    </SvgIcon>
 );
 
 const ProgressIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <SvgIcon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-    </svg>
+    </SvgIcon>
 );
 
 const JournalIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <SvgIcon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-    </svg>
+    </SvgIcon>
 );
 
 const GameIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <SvgIcon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
+    </SvgIcon>
 );
 
 const LinkIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <SvgIcon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-    </svg>
+    </SvgIcon>
 );
 
 const TestIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <SvgIcon xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-    </svg>
+    </SvgIcon>
 );
 
 
