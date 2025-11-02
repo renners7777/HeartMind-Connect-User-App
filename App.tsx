@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import type { Models } from 'appwrite';
-import { Permission, Query } from 'appwrite';
+import { Permission, Query, AppwriteException } from 'appwrite';
 import styled, { keyframes } from 'styled-components';
 import Layout from './components/Layout';
 import Home from './components/Home';
@@ -15,7 +15,7 @@ import VoiceInput from './components/VoiceInput';
 import Login from './components/Login';
 import type { Task, Message, JournalEntry, UserPrefs } from './types';
 import { Page } from './types';
-import { client, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, USER_RELATIONSHIPS_COLLECTION_ID, JOURNAL_TABLE_COLLECTION_ID, ID } from './services/appwrite';
+import { client, account, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, USER_RELATIONSHIPS_COLLECTION_ID, JOURNAL_TABLE_COLLECTION_ID, ID } from './services/appwrite';
 import AppwriteError from './components/AppwriteError';
 import { initializeApiKey } from './services/apiKeyService';
 
@@ -73,25 +73,41 @@ const App: React.FC = () => {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const loadUserData = useCallback(async (userId: string) => {
+  const loadUserData = useCallback(async (currentUser: Models.User<UserPrefs>) => {
     try {
       setAppwriteError(false);
       const key = initializeApiKey();
       setApiKey(key);
 
+      let relationshipQuery;
+      if (currentUser.prefs.role === 'survivor') {
+          relationshipQuery = Query.equal('survivor_id', currentUser.$id);
+      } else { // caregiver
+          relationshipQuery = Query.equal('caregiver_id', currentUser.$id);
+      }
+
       const relationshipResponse = await databases.listDocuments(
           DATABASE_ID,
           USER_RELATIONSHIPS_COLLECTION_ID,
-          [Query.equal('survivor_id', userId), Query.limit(1)]
+          [relationshipQuery, Query.limit(1)]
       );
+
       if (relationshipResponse.documents.length > 0) {
-          const relationshipDoc = relationshipResponse.documents[0];
-          if (relationshipDoc && typeof relationshipDoc.shareable_id === 'string') {
-              setShareableCode(relationshipDoc.shareable_id);
+          const doc = relationshipResponse.documents[0];
+          if (currentUser.prefs.role === 'survivor') {
+              setShareableCode(doc.shareable_id);
+              if (doc.caregiver_name && currentUser.prefs.caregiver_name !== doc.caregiver_name) {
+                  await account.updatePrefs({ ...currentUser.prefs, caregiver_name: doc.caregiver_name, caregiver_id: doc.caregiver_id });
+              }
+          } else { // caregiver
+              if (currentUser.prefs.survivor_name !== doc.survivor_name) {
+                  await account.updatePrefs({ ...currentUser.prefs, survivor_name: doc.survivor_name, survivor_id: doc.survivor_id });
+              }
           }
       }
 
-      const taskResponse = await databases.listDocuments(DATABASE_ID, TASKS_COLLECTION_ID);
+      // Documents are fetched based on read permissions set during creation, so no complex queries are needed here.
+      const taskResponse = await databases.listDocuments(DATABASE_ID, TASKS_COLLECTION_ID, [Query.orderDesc('$createdAt')]);
       setTasks(taskResponse.documents as unknown as Task[]);
 
       const messageResponse = await databases.listDocuments(DATABASE_ID, MESSAGES_COLLECTION_ID, [Query.orderAsc('$createdAt')]);
@@ -115,12 +131,14 @@ const App: React.FC = () => {
         if (session) {
             setUser(session);
             setIsLoggedIn(true);
-            await loadUserData(session.$id);
+            await loadUserData(session);
         } else {
             setIsLoggedIn(false);
+            setUser(null);
         }
     } catch (e) {
         setIsLoggedIn(false);
+        setUser(null);
     } finally {
         setIsLoading(false);
     }
@@ -225,22 +243,27 @@ const App: React.FC = () => {
 
   const getPermissions = () => {
     if (!user) return [];
-    const userPermissions = [
-      Permission.read(`user:${user.$id}`),
-      Permission.update(`user:${user.$id}`),
-      Permission.delete(`user:${user.$id}`),
+    const selfId = user.$id;
+    let otherId: string | undefined;
+
+    if (user.prefs.role === 'survivor') {
+        otherId = user.prefs.caregiver_id;
+    } else if (user.prefs.role === 'caregiver') {
+        otherId = user.prefs.survivor_id;
+    }
+
+    const permissions = [
+        Permission.read(`user:${selfId}`),
+        Permission.update(`user:${selfId}`),
+        Permission.delete(`user:${selfId}`),
     ];
 
-    const caregiverId = user.prefs.caregiver_id;
-    if (caregiverId) {
-      return [
-        ...userPermissions,
-        Permission.read(`user:${caregiverId}`),
-        Permission.update(`user:${caregiverId}`),
-        Permission.delete(`user:${caregiverId}`),
-      ];
+    if (otherId) {
+        permissions.push(Permission.read(`user:${otherId}`));
+        permissions.push(Permission.update(`user:${otherId}`));
     }
-    return userPermissions;
+
+    return permissions;
   }
 
   const addTask = async (title: string) => {
@@ -264,7 +287,9 @@ const App: React.FC = () => {
       const task = tasks.find(t => t.$id === id);
       if (task) {
         const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-        await databases.updateDocument(DATABASE_ID, TASKS_COLLECTION_ID, id, { status: newStatus });
+        const perms = getPermissions();
+        // The permissions need to be passed again on update to ensure they are not overwritten to default.
+        await databases.updateDocument(DATABASE_ID, TASKS_COLLECTION_ID, id, { status: newStatus }, perms);
       }
     } catch(error) {
         console.error("Failed to toggle task:", error);
@@ -278,7 +303,7 @@ const App: React.FC = () => {
             DATABASE_ID, 
             MESSAGES_COLLECTION_ID, 
             ID.unique(), 
-            { text, sender: 'user' }, 
+            { text, sender: user.prefs.role }, 
             getPermissions()
         );
     } catch (error) {
@@ -306,7 +331,7 @@ const App: React.FC = () => {
             DATABASE_ID,
             JOURNAL_TABLE_COLLECTION_ID,
             ID.unique(),
-            { content, shared_with_companion: share },
+            { content, shared_with_companion: share, creator_name: user.name },
             finalPermissions
         );
         setJournalEntries(prevEntries => [document as unknown as JournalEntry, ...prevEntries]);
@@ -345,6 +370,58 @@ const App: React.FC = () => {
         console.error("Failed to add companion task:", error);
     }
   };
+
+  const linkAccount = async (shareableId: string) => {
+    if (!user || user.prefs.role !== 'caregiver') {
+        throw new Error("Only caregivers can link accounts.");
+    }
+
+    const response = await databases.listDocuments(
+        DATABASE_ID,
+        USER_RELATIONSHIPS_COLLECTION_ID,
+        [Query.equal('shareable_id', shareableId)]
+    );
+
+    const relationshipDoc = response.documents[0];
+    if (!relationshipDoc) {
+        throw new Error("Invalid share code. Please check and try again.");
+    }
+
+    const survivorId = relationshipDoc.survivor_id;
+    const survivorName = relationshipDoc.survivor_name;
+
+    const caregiverId = user.$id;
+    const caregiverName = user.name;
+
+    // Update the relationship document with the caregiver's info and set permissions
+    await databases.updateDocument(
+        DATABASE_ID,
+        USER_RELATIONSHIPS_COLLECTION_ID,
+        relationshipDoc.$id,
+        {
+            caregiver_id: caregiverId,
+            caregiver_name: caregiverName
+        },
+        [
+            Permission.read(`user:${survivorId}`),
+            Permission.update(`user:${survivorId}`),
+            Permission.read(`user:${caregiverId}`),
+            Permission.update(`user:${caregiverId}`),
+        ]
+    );
+
+    // Update the caregiver's and survivor's preferences
+    await account.updatePrefs({
+        ...user.prefs,
+        survivor_id: survivorId,
+        survivor_name: survivorName
+    });
+    
+    // The survivor's preferences will be updated the next time they load data.
+    // Re-run session check to reload all data with new permissions and prefs
+    await checkSession();
+  };
+
 
   const handleLogout = async () => {
     try {
@@ -387,7 +464,7 @@ const App: React.FC = () => {
     <AppContainer>
       <Routes>
         <Route element={<Layout onLogout={handleLogout} />}>
-          <Route index element={<Home user={user} shareableCode={shareableCode} />} />
+          <Route index element={<Home user={user} shareableCode={shareableCode} onLinkAccount={linkAccount} />} />
           <Route path={Page.Tasks} element={<Tasks tasks={tasks} onToggleTask={toggleTask} onAddTask={addTask} />} />
           <Route path={Page.Chat} element={<Chat messages={messages} onSendMessage={sendMessage} />} />
           <Route path={Page.Progress} element={<Progress tasks={tasks} />} />
