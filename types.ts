@@ -1,16 +1,15 @@
 import type { Models } from 'appwrite';
 
 export enum Page {
-  Home = 'Home',
-  Tasks = 'Tasks',
-  Chat = 'Chat',
-  Progress = 'Progress',
-  Journal = 'Journal',
-  MemoryGame = 'Memory Game',
-  Testing = 'Testing Panel',
+  Home = '/',
+  Tasks = '/tasks',
+  Chat = '/chat',
+  Progress = '/progress',
+  Journal = '/journal',
+  MemoryGame = '/memory-game',
+  Testing = '/testing',
 }
 
-// FIX: Added UserPrefs to strongly type user preferences from Appwrite.
 export interface UserPrefs extends Models.Preferences {
   caregiver_id?: string;
   caregiver_name?: string;
@@ -20,11 +19,10 @@ export interface UserPrefs extends Models.Preferences {
 
 export interface Task {
   $id: string;
-  text: string;
-  completed: boolean;
+  title: string;
+  status: string;
   $createdAt: string;
   creator_name?: string;
-  // FIX: Added `$permissions` array to correctly type Appwrite documents.
   $permissions: string[];
 }
 
@@ -33,7 +31,6 @@ export interface Message {
   text: string;
   sender: 'user' | 'companion';
   $createdAt: string;
-  // FIX: Added `$permissions` array to correctly type Appwrite documents.
   $permissions: string[];
 }
 

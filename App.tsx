@@ -196,7 +196,7 @@ const App: React.FC = () => {
     } else if (lowerCaseCommand.startsWith('complete task')) {
       const taskTextMatch = command.substring('complete task'.length).trim();
       if (taskTextMatch) {
-          const taskToComplete = tasks.find(t => !t.completed && t.text.toLowerCase().includes(taskTextMatch.toLowerCase()));
+          const taskToComplete = tasks.find(t => t.status !== 'completed' && t.title.toLowerCase().includes(taskTextMatch.toLowerCase()));
           if(taskToComplete){
             toggleTask(taskToComplete.$id);
             navigate(Page.Tasks);
@@ -209,7 +209,7 @@ const App: React.FC = () => {
             navigate(Page.Chat);
         }
     } else if (lowerCaseCommand.includes('go to home')) {
-        navigate('/');
+        navigate(Page.Home);
     } else if (lowerCaseCommand.includes('go to tasks')) {
         navigate(Page.Tasks);
     } else if (lowerCaseCommand.includes('go to journal')) {
@@ -243,14 +243,14 @@ const App: React.FC = () => {
     return userPermissions;
   }
 
-  const addTask = async (text: string) => {
+  const addTask = async (title: string) => {
     if (!user) return;
     try {
         const document = await databases.createDocument(
             DATABASE_ID, 
             TASKS_COLLECTION_ID, 
             ID.unique(), 
-            { text, completed: false, creator_name: user.name }, 
+            { title, status: 'pending', creator_name: user.name }, 
             getPermissions()
         );
         setTasks(prevTasks => [document as unknown as Task, ...prevTasks]);
@@ -263,7 +263,8 @@ const App: React.FC = () => {
     try {
       const task = tasks.find(t => t.$id === id);
       if (task) {
-        await databases.updateDocument(DATABASE_ID, TASKS_COLLECTION_ID, id, { completed: !task.completed });
+        const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+        await databases.updateDocument(DATABASE_ID, TASKS_COLLECTION_ID, id, { status: newStatus });
       }
     } catch(error) {
         console.error("Failed to toggle task:", error);
@@ -329,7 +330,7 @@ const App: React.FC = () => {
     }
   };
 
-  const addCompanionTask = async (text: string) => {
+  const addCompanionTask = async (title: string) => {
     if (!user) return;
     const companionName = user.prefs.caregiver_name || 'Companion';
     try {
@@ -337,7 +338,7 @@ const App: React.FC = () => {
             DATABASE_ID,
             TASKS_COLLECTION_ID,
             ID.unique(),
-            { text, completed: false, creator_name: companionName },
+            { title, status: 'pending', creator_name: companionName },
             getPermissions()
         );
     } catch (error) {
@@ -356,7 +357,7 @@ const App: React.FC = () => {
     setTasks([]);
     setMessages([]);
     setJournalEntries([]);
-    navigate('/');
+    navigate(Page.Home);
   };
   
   const handleLoginSuccess = async () => {

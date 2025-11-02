@@ -5,7 +5,7 @@ import type { Task } from '../types';
 interface TasksProps {
   tasks: Task[];
   onToggleTask: (id: string) => void;
-  onAddTask: (text: string) => void;
+  onAddTask: (title: string) => void;
 }
 
 const Container = styled.div`
@@ -132,15 +132,15 @@ const NoTasksText = styled.p`
 `;
 
 const Tasks: React.FC<TasksProps> = ({ tasks, onToggleTask, onAddTask }) => {
-  const [newTaskText, setNewTaskText] = useState('');
-  const incompleteTasks = tasks.filter(task => !task.completed);
-  const completedTasks = tasks.filter(task => task.completed);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const incompleteTasks = tasks.filter(task => task.status !== 'completed');
+  const completedTasks = tasks.filter(task => task.status === 'completed');
 
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newTaskText.trim()) {
-      onAddTask(newTaskText.trim());
-      setNewTaskText('');
+    if (newTaskTitle.trim()) {
+      onAddTask(newTaskTitle.trim());
+      setNewTaskTitle('');
     }
   };
 
@@ -151,13 +151,13 @@ const Tasks: React.FC<TasksProps> = ({ tasks, onToggleTask, onAddTask }) => {
         <AddTaskForm onSubmit={handleAddTask}>
             <TaskInput
                 type="text"
-                value={newTaskText}
-                onChange={(e) => setNewTaskText(e.target.value)}
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
                 placeholder="e.g., Take medication at 10 AM"
             />
             <AddButton
                 type="submit"
-                disabled={!newTaskText.trim()}
+                disabled={!newTaskTitle.trim()}
             >
                 Add
             </AddButton>
@@ -197,27 +197,31 @@ interface TaskItemProps {
     index: number;
 }
 
-const TaskItem: React.FC<TaskItemProps> = ({ task, onToggleTask, index }) => (
-    <TaskListItem>
-        <TaskCheckboxContainer>
-            <TaskIndex>{index + 1}.</TaskIndex>
-            <TaskCheckbox
-                type="checkbox"
-                checked={task.completed}
-                onChange={() => onToggleTask(task.$id)}
-            />
-        </TaskCheckboxContainer>
-        <TaskTextContainer>
-            <TaskText completed={task.completed}>
-                {task.text}
-            </TaskText>
-            {task.creator_name && (
-                <CreatorText>
-                    Added by {task.creator_name}
-                </CreatorText>
-            )}
-        </TaskTextContainer>
-    </TaskListItem>
-);
+const TaskItem: React.FC<TaskItemProps> = ({ task, onToggleTask, index }) => {
+    const isCompleted = task.status === 'completed';
+
+    return (
+        <TaskListItem>
+            <TaskCheckboxContainer>
+                <TaskIndex>{index + 1}.</TaskIndex>
+                <TaskCheckbox
+                    type="checkbox"
+                    checked={isCompleted}
+                    onChange={() => onToggleTask(task.$id)}
+                />
+            </TaskCheckboxContainer>
+            <TaskTextContainer>
+                <TaskText completed={isCompleted}>
+                    {task.title}
+                </TaskText>
+                {task.creator_name && (
+                    <CreatorText>
+                        Added by {task.creator_name}
+                    </CreatorText>
+                )}
+            </TaskTextContainer>
+        </TaskListItem>
+    );
+};
 
 export default Tasks;
