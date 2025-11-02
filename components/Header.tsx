@@ -1,6 +1,5 @@
 import React from 'react';
 import type { Page } from '../types';
-import logoUrl from '@/assets/logo.png';
 
 interface HeaderProps {
   currentPage: Page;
@@ -15,7 +14,7 @@ const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate, onLogout }) =>
       <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-10 h-16 flex items-center justify-between px-4">
         <div className="flex items-center">
           <img 
-            src={logoUrl} 
+            src="/logo.png" 
             alt="HeartMind Connect Logo" 
             className="h-12 w-12 mr-2"
           />
