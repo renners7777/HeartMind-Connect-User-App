@@ -7,16 +7,16 @@ let initialized = false;
 
 /**
  * Initializes the API key for the application session.
- * It retrieves the key from process.env.API_KEY once and stores it.
+ * It retrieves the key from import.meta.env.VITE_API_KEY once and stores it.
  * The key's availability is handled externally as a hard requirement.
  * @returns The API key string or null.
  */
 export function initializeApiKey(): string | null {
   if (!initialized) {
     // The API key MUST be obtained exclusively from the environment variable.
-    apiKey = (process.env && process.env.API_KEY) || null;
+    apiKey = import.meta.env.VITE_API_KEY || null;
     if (!apiKey) {
-      console.error("Gemini API Key not found. Please set the API_KEY environment variable.");
+      console.error("Gemini API Key not found. Please set the VITE_API_KEY environment variable.");
     }
     initialized = true;
   }
