@@ -204,6 +204,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       if (role === 'survivor') {
         const newShareCode = generateShareCode();
         const userPermissions = [
+            Permission.read(`user:${newUser.$id}`),
             Permission.update(`user:${newUser.$id}`),
             Permission.delete(`user:${newUser.$id}`),
         ];
