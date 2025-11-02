@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import type { Models } from 'appwrite';
 import { Permission, Query } from 'appwrite';
-import Header from './components/Header';
+import Layout from './components/Layout';
 import Home from './components/Home';
 import Tasks from './components/Tasks';
 import Chat from './components/Chat';
@@ -17,19 +18,17 @@ import { client, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTIO
 import AppwriteError from './components/AppwriteError';
 import { initializeApiKey } from './services/apiKeyService';
 
-
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  // FIX: Used strongly-typed UserPrefs for Appwrite user object.
   const [user, setUser] = useState<Models.User<UserPrefs> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState<Page>(Page.Home);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [shareableCode, setShareableCode] = useState<string | null>(null);
   const [appwriteError, setAppwriteError] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const loadUserData = useCallback(async (userId: string) => {
     try {
@@ -37,24 +36,18 @@ const App: React.FC = () => {
       const key = initializeApiKey();
       setApiKey(key);
 
-      // Fetch shareable code from the relationships table
-      try {
-        const relationshipResponse = await databases.listDocuments(
-            DATABASE_ID,
-            USER_RELATIONSHIPS_COLLECTION_ID,
-            [Query.equal('survivor_id', userId), Query.limit(1)]
-        );
-        if (relationshipResponse.documents.length > 0) {
-            const relationshipDoc = relationshipResponse.documents[0];
-            if (relationshipDoc && typeof relationshipDoc.shareable_id === 'string') {
-                setShareableCode(relationshipDoc.shareable_id);
-            }
-        }
-      } catch (error) {
-          console.warn("Could not find a shareable code for this user.", error);
+      const relationshipResponse = await databases.listDocuments(
+          DATABASE_ID,
+          USER_RELATIONSHIPS_COLLECTION_ID,
+          [Query.equal('survivor_id', userId), Query.limit(1)]
+      );
+      if (relationshipResponse.documents.length > 0) {
+          const relationshipDoc = relationshipResponse.documents[0];
+          if (relationshipDoc && typeof relationshipDoc.shareable_id === 'string') {
+              setShareableCode(relationshipDoc.shareable_id);
+          }
       }
 
-      // FIX: Corrected typo in TASKS_COLLECTION_ID constant.
       const taskResponse = await databases.listDocuments(DATABASE_ID, TASKS_COLLECTION_ID);
       setTasks(taskResponse.documents as unknown as Task[]);
 
@@ -137,7 +130,6 @@ const App: React.FC = () => {
         if (event.endsWith('create')) {
             setJournalEntries(prevEntries => {
                 if (prevEntries.some(e => e.$id === payload.$id)) return prevEntries;
-                // Add new entry to the top of the list
                 return [payload, ...prevEntries];
             });
         }
@@ -156,7 +148,7 @@ const App: React.FC = () => {
       const taskText = command.substring('add task'.length).trim();
       if (taskText) {
         addTask(taskText);
-        setCurrentPage(Page.Tasks);
+        navigate(Page.Tasks);
       }
     } else if (lowerCaseCommand.startsWith('complete task')) {
       const taskTextMatch = command.substring('complete task'.length).trim();
@@ -164,27 +156,27 @@ const App: React.FC = () => {
           const taskToComplete = tasks.find(t => !t.completed && t.text.toLowerCase().includes(taskTextMatch.toLowerCase()));
           if(taskToComplete){
             toggleTask(taskToComplete.$id);
-            setCurrentPage(Page.Tasks);
+            navigate(Page.Tasks);
           }
       }
     } else if (lowerCaseCommand.startsWith('send message')) {
         const messageText = command.substring('send message'.length).trim();
         if(messageText){
             sendMessage(messageText);
-            setCurrentPage(Page.Chat);
+            navigate(Page.Chat);
         }
     } else if (lowerCaseCommand.includes('go to home')) {
-        setCurrentPage(Page.Home);
+        navigate(Page.Home);
     } else if (lowerCaseCommand.includes('go to tasks')) {
-        setCurrentPage(Page.Tasks);
+        navigate(Page.Tasks);
     } else if (lowerCaseCommand.includes('go to journal')) {
-        setCurrentPage(Page.Journal);
+        navigate(Page.Journal);
     } else if (lowerCaseCommand.includes('go to chat')) {
-        setCurrentPage(Page.Chat);
+        navigate(Page.Chat);
     } else if (lowerCaseCommand.includes('go to progress')) {
-        setCurrentPage(Page.Progress);
+        navigate(Page.Progress);
     } else if (lowerCaseCommand.includes('go to memory game') || lowerCaseCommand.includes('play memory game')) {
-        setCurrentPage(Page.MemoryGame);
+        navigate(Page.MemoryGame);
     }
   };
 
@@ -310,7 +302,6 @@ const App: React.FC = () => {
     }
   };
 
-
   const handleLogout = async () => {
     try {
         await logoutUser();
@@ -322,35 +313,11 @@ const App: React.FC = () => {
     setTasks([]);
     setMessages([]);
     setJournalEntries([]);
-    setCurrentPage(Page.Home);
+    navigate(Page.Home);
   };
   
   const handleLoginSuccess = async () => {
     await checkSession();
-  };
-
-  const renderPage = () => {
-    if (appwriteError) {
-      return <AppwriteError />;
-    }
-    switch (currentPage) {
-      case Page.Home:
-        return <Home onNavigate={setCurrentPage} user={user} shareableCode={shareableCode} />;
-      case Page.Tasks:
-        return <Tasks tasks={tasks} onToggleTask={toggleTask} onAddTask={addTask} />;
-      case Page.Chat:
-        return <Chat messages={messages} onSendMessage={sendMessage} />;
-      case Page.Progress:
-        return <Progress tasks={tasks} />;
-      case Page.Journal:
-        return <Journal journalEntries={journalEntries} onAddJournalEntry={addJournalEntry} />;
-      case Page.MemoryGame:
-        return <MemoryGame />;
-      case Page.Testing:
-        return <TestingPanel user={user} onSendCompanionMessage={sendCompanionMessage} onAddCompanionTask={addCompanionTask} />;
-      default:
-        return <Home onNavigate={setCurrentPage} user={user} shareableCode={shareableCode} />;
-    }
   };
 
   if (isLoading) {
@@ -367,13 +334,24 @@ const App: React.FC = () => {
   if (!isLoggedIn) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
+
+  if (appwriteError) {
+      return <AppwriteError />;
+  }
   
   return (
     <div className="flex flex-col h-screen font-sans bg-gray-50">
-      <Header currentPage={currentPage} onNavigate={setCurrentPage} onLogout={handleLogout} />
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 mt-16 pb-36">
-        {renderPage()}
-      </main>
+      <Routes>
+        <Route element={<Layout onLogout={handleLogout} />}>
+          <Route path={Page.Home} element={<Home user={user} shareableCode={shareableCode} />} />
+          <Route path={Page.Tasks} element={<Tasks tasks={tasks} onToggleTask={toggleTask} onAddTask={addTask} />} />
+          <Route path={Page.Chat} element={<Chat messages={messages} onSendMessage={sendMessage} />} />
+          <Route path={Page.Progress} element={<Progress tasks={tasks} />} />
+          <Route path={Page.Journal} element={<Journal journalEntries={journalEntries} onAddJournalEntry={addJournalEntry} />} />
+          <Route path={Page.MemoryGame} element={<MemoryGame />} />
+          <Route path={Page.Testing} element={<TestingPanel user={user} onSendCompanionMessage={sendCompanionMessage} onAddCompanionTask={addCompanionTask} />} />
+        </Route>
+      </Routes>
       <VoiceInput onCommand={handleVoiceCommand} apiKey={apiKey} />
     </div>
   );

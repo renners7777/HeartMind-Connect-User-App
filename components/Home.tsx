@@ -1,18 +1,16 @@
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Models } from 'appwrite';
-import type { Page, UserPrefs } from '../types';
+import type { UserPrefs } from '../types';
 import { Page as PageEnum } from '../types';
 
 interface HomeProps {
-    onNavigate: (page: Page) => void;
-    // FIX: Replaced deprecated `Models.Account` with `Models.User` for Appwrite user type.
-    // FIX: Used strongly-typed UserPrefs for Appwrite user object.
     user: Models.User<UserPrefs> | null;
     shareableCode: string | null;
 }
 
-const Home: React.FC<HomeProps> = ({ onNavigate, user, shareableCode }) => {
+const Home: React.FC<HomeProps> = ({ user, shareableCode }) => {
   const [copied, setCopied] = useState(false);
   const caregiverName = user?.prefs.caregiver_name;
   const isSurvivor = user?.prefs?.role === 'survivor';
@@ -24,7 +22,6 @@ const Home: React.FC<HomeProps> = ({ onNavigate, user, shareableCode }) => {
         setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
     }
   };
-
 
   return (
     <div className="space-y-6">
@@ -79,49 +76,48 @@ const Home: React.FC<HomeProps> = ({ onNavigate, user, shareableCode }) => {
         )
       )}
 
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <HomeCard
             title="Daily Tasks"
             description="View and manage your daily tasks."
             icon={<TasksIcon />}
-            onClick={() => onNavigate(PageEnum.Tasks)}
+            to={PageEnum.Tasks}
         />
         <HomeCard
             title="Chat with Companion"
             description="Send a message to your support companion."
             icon={<ChatIcon />}
-            onClick={() => onNavigate(PageEnum.Chat)}
+            to={PageEnum.Chat}
         />
         <HomeCard
             title="Track Progress"
             description="See how you're doing over time."
             icon={<ProgressIcon />}
-            onClick={() => onNavigate(PageEnum.Progress)}
+            to={PageEnum.Progress}
         />
         <HomeCard
             title="Journal"
             description="Write down your thoughts and feelings."
             icon={<JournalIcon />}
-            onClick={() => onNavigate(PageEnum.Journal)}
+            to={PageEnum.Journal}
         />
         <HomeCard
             title="Memory Game"
             description="A fun exercise to train your memory."
             icon={<GameIcon />}
-            onClick={() => onNavigate(PageEnum.MemoryGame)}
+            to={PageEnum.MemoryGame}
         />
         <HomeCard
             title="Companion App"
             description="Visit the companion website for resources."
             icon={<LinkIcon />}
-            onClick={() => window.open('https://stroke-memory-app-companion-site.appwrite.network/', '_blank')}
+            to="https://stroke-memory-app-companion-site.appwrite.network/"
         />
         <HomeCard
           title="Testing Panel"
           description="Simulate companion actions for testing."
           icon={<TestIcon />}
-          onClick={() => onNavigate(PageEnum.Testing)}
+          to={PageEnum.Testing}
         />
       </div>
     </div>
@@ -132,22 +128,35 @@ interface HomeCardProps {
     title: string;
     description: string;
     icon: React.ReactNode;
-    onClick: () => void;
+    to: string;
 }
 
-const HomeCard: React.FC<HomeCardProps> = ({ title, description, icon, onClick }) => (
-    <button
-      onClick={onClick}
-      className="bg-white p-6 rounded-lg shadow-md flex items-start space-x-4 hover:bg-blue-50 transition-colors duration-200 text-left w-full"
-    >
-      <div className="text-blue-600">{icon}</div>
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-        <p className="text-gray-600 mt-1">{description}</p>
-      </div>
-    </button>
-);
+const HomeCard: React.FC<HomeCardProps> = ({ title, description, icon, to }) => {
+    const isExternal = to.startsWith('http');
+    const cardContent = (
+        <div className="bg-white p-6 rounded-lg shadow-md flex items-start space-x-4 hover:bg-blue-50 transition-colors duration-200 text-left w-full">
+            <div className="text-blue-600">{icon}</div>
+            <div>
+                <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+                <p className="text-gray-600 mt-1">{description}</p>
+            </div>
+        </div>
+    );
 
+    if (isExternal) {
+        return (
+            <a href={to} target="_blank" rel="noopener noreferrer">
+                {cardContent}
+            </a>
+        );
+    }
+
+    return (
+        <Link to={to}>
+            {cardContent}
+        </Link>
+    );
+};
 
 const TasksIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
