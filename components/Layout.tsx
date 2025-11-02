@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import styled from 'styled-components';
 import Header from './Header';
+import Footer from './Footer';
 
 interface LayoutProps {
   onLogout: () => void;
@@ -10,7 +11,7 @@ interface LayoutProps {
 const LayoutContainer = styled.div`
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  min-height: 100vh;
 `;
 
 const MainContent = styled.main`
@@ -25,6 +26,7 @@ const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
       <MainContent>
         <Outlet />
       </MainContent>
+      <Footer />
     </LayoutContainer>
   );
 };
