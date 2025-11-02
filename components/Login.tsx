@@ -193,27 +193,21 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError('');
     setIsLoading(true);
     try {
-      // 1. Create the user account
       const newUser = await account.create(ID.unique(), email, password, name);
-
-      // 2. Immediately create a session to log the new user in
       await account.createEmailPasswordSession(email, password);
 
-      // 3. Now that the user is logged in, update their preferences
       await account.updatePrefs({
         role: role,
         canCompanionAddTask: false,
       });
       
-      // 4. If they are a survivor, create the relationship document
       if (role === 'survivor') {
         const newShareCode = generateShareCode();
         const userPermissions = [
             Permission.update(`user:${newUser.$id}`),
             Permission.delete(`user:${newUser.$id}`),
         ];
-        // Let any guest user read this doc to find the user by shareable_id for linking
-        const readPermissions = [Permission.read('role:all')];
+        const readPermissions = [Permission.read('any')];
 
         await databases.createDocument(
             DATABASE_ID,
@@ -228,7 +222,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         );
       }
 
-      // 5. Signal to the main app that login was successful
       onLoginSuccess();
 
     } catch (e) {
