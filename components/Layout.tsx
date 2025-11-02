@@ -8,9 +8,9 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   return (
-    <div>
+    <div className="flex flex-col flex-grow">
       <Header onLogout={onLogout} />
-      <main className="pt-16">
+      <main className="pt-16 flex-grow">
         <Outlet />
       </main>
     </div>
