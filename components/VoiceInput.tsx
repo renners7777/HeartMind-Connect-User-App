@@ -17,15 +17,10 @@ const pulse = keyframes`
 `;
 
 const VoiceInputContainer = styled.div`
-  position: sticky;
-  bottom: 0;
-  background-color: white;
-  padding: 1rem;
-  border-top: 2px solid #bfdbfe; // blue-200
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 50;
 `;
 
 const ListenButton = styled.button<{ isListening: boolean; disabled: boolean }>`
@@ -37,6 +32,7 @@ const ListenButton = styled.button<{ isListening: boolean; disabled: boolean }>`
   justify-content: center;
   border: none;
   cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 
   ${({ isListening, disabled }) => {
     if (disabled) {
@@ -73,13 +69,6 @@ const MicIcon = styled.svg`
   height: 2rem; // h-8
   width: 2rem; // w-8
   color: white;
-`;
-
-const StatusText = styled.p`
-  color: #4b5563; // text-gray-600
-  margin-top: 0.5rem; // mt-2
-  font-size: 0.875rem; // text-sm
-  font-weight: 500; // font-medium
 `;
 
 const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
@@ -163,7 +152,7 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
       mediaStreamRef.current = stream;
 
       const sessionPromise = ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+        model: 'gemini-1.5-flash-latest',
         callbacks: {
           onopen: () => {
             setStatus('Listening...');
@@ -233,8 +222,8 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
           inputAudioTranscription: {},
           systemInstruction: `You are a friendly AI assistant for a stroke survivor. 
           Your role is to help them manage tasks, send messages, and navigate the app. 
-          When they add a task or send a message, confirm the action clearly. For example, if they say 'add task call the doctor', you should respond 'Okay, I\'ve added "call the doctor" to your tasks.\'
-          When they ask to navigate, confirm the navigation. For example, if they say \'go to chat\', respond \'Going to the chat screen.\'
+          When they add a task or send a message, confirm the action clearly. For example, if they say 'add task call the doctor', you should respond 'Okay, I've added "call the doctor" to your tasks.'
+          When they ask to navigate, confirm the navigation. For example, if they say 'go to chat', respond 'Going to the chat screen.'
           Keep responses concise, clear, and reassuring.`,
         },
       });
@@ -270,7 +259,6 @@ const VoiceInput: React.FC<VoiceInputProps> = ({ onCommand, apiKey }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
         </MicIcon>
       </ListenButton>
-      <StatusText>{status}</StatusText>
     </VoiceInputContainer>
   );
 };

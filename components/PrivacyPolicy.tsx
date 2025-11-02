@@ -1,14 +1,32 @@
 import React from 'react';
 import styled from 'styled-components';
 
-const PolicyContainer = styled.div`
+interface PrivacyPolicyProps {
+  onClose: () => void;
+}
+
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+`;
+
+const ModalContent = styled.div`
   background-color: #111827; // bg-gray-900
   color: #d1d5db; // text-gray-300
-  padding: 2rem 1rem;
-  max-width: 80rem;
-  margin: 0 auto;
-  font-size: 0.875rem;
-  line-height: 1.5;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
 
   h1, h2, h3 {
     font-weight: bold;
@@ -45,9 +63,26 @@ const PolicyContainer = styled.div`
   }
 `;
 
-const PrivacyPolicy: React.FC = () => {
+const CloseButton = styled.button`
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: #d1d5db; // text-gray-300
+  font-size: 1.5rem;
+  cursor: pointer;
+
+  &:hover {
+    color: #ffffff; // text-white
+  }
+`;
+
+const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onClose }) => {
   return (
-    <PolicyContainer>
+    <ModalOverlay onClick={onClose}>
+      <ModalContent onClick={(e) => e.stopPropagation()}>
+        <CloseButton onClick={onClose}>&times;</CloseButton>
         <h1>Privacy Policy</h1>
         <p><strong>Effective Date:</strong> 24th July 2024</p>
 
@@ -131,7 +166,8 @@ const PrivacyPolicy: React.FC = () => {
         <p>
             If you have any questions or concerns about this Privacy Policy, please contact us at <a href="mailto:CRSoftwareEngineer@outlook.com">CRSoftwareEngineer@outlook.com</a>.
         </p>
-    </PolicyContainer>
+      </ModalContent>
+    </ModalOverlay>
   );
 };
 

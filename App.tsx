@@ -14,7 +14,6 @@ import MemoryGame from './components/MemoryGame';
 import TestingPanel from './components/TestingPanel';
 import VoiceInput from './components/VoiceInput';
 import Login from './components/Login';
-import PrivacyPolicy from './components/PrivacyPolicy';
 import type { Task, Message, JournalEntry, UserPrefs } from './types';
 import { Page } from './types';
 import { client, account, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, USER_RELATIONSHIPS_COLLECTION_ID, JOURNAL_TABLE_COLLECTION_ID, ID } from './services/appwrite';
@@ -473,17 +472,14 @@ const App: React.FC = () => {
     <AppContainer>
         <Routes>
             {!isLoggedIn ? (
-                <>
-                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                    <Route path="*" element={
-                        <UnauthenticatedContainer>
-                            <MainContent>
-                                <Login onLoginSuccess={handleLoginSuccess} />
-                            </MainContent>
-                            <Footer />
-                        </UnauthenticatedContainer>
-                    } />
-                </>
+                <Route path="*" element={
+                    <UnauthenticatedContainer>
+                        <MainContent>
+                            <Login onLoginSuccess={handleLoginSuccess} />
+                        </MainContent>
+                        <Footer />
+                    </UnauthenticatedContainer>
+                } />
             ) : (
                 <>
                     <Route element={<Layout onLogout={handleLogout} />}>
@@ -494,7 +490,6 @@ const App: React.FC = () => {
                         <Route path={Page.Journal} element={<Journal journalEntries={journalEntries} onAddJournalEntry={addJournalEntry} />} />
                         <Route path={Page.MemoryGame} element={<MemoryGame />} />
                         <Route path={Page.Testing} element={<TestingPanel user={user} onSendCompanionMessage={sendCompanionMessage} onAddCompanionTask={addCompanionTask} />} />
-                        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     </Route>
                     <Route path="/login" element={
                         <UnauthenticatedContainer>

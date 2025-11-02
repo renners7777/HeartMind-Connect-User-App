@@ -1,7 +1,6 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Page } from '../types';
+import PrivacyPolicy from './PrivacyPolicy';
 
 const FooterContainer = styled.footer`
   background-color: #111827; // bg-gray-900
@@ -38,9 +37,14 @@ const FooterLink = styled.a`
   }
 `;
 
-const InternalFooterLink = styled(Link)`
+const FooterButton = styled.button`
+  background: none;
+  border: none;
   color: #d1d5db; // text-gray-300
   text-decoration: none;
+  padding: 0;
+  font-size: inherit;
+  cursor: pointer;
   &:hover {
     text-decoration: underline;
     color: #ffffff;
@@ -55,24 +59,29 @@ const CopyrightText = styled.p`
 
 
 const Footer: React.FC = () => {
+  const [isPrivacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
+
   return (
-    <FooterContainer>
-      <FooterContent>
-        <TextBlock>
-          Created by Chris Renshaw using Google AI Studio and Firebase Studio.
-        </TextBlock>
-        <LinkContainer>
-          <FooterLink href="mailto:CRSoftwareEngineer@outlook.com">Contact</FooterLink>
-          <FooterLink href="https://www.linkedin.com/in/chris-renshaw-renners7777/" target="_blank" rel="noopener noreferrer">LinkedIn</FooterLink>
-          <FooterLink href="https://github.com/renners7777" target="_blank" rel="noopener noreferrer">Github</FooterLink>
-          <FooterLink href="https://www.chrisrenshaw.net/" target="_blank" rel="noopener noreferrer">Website</FooterLink>
-          <InternalFooterLink to="/privacy-policy">Privacy Policy</InternalFooterLink>
-        </LinkContainer>
-        <CopyrightText>
-          Copyright © Chris Renshaw 2025.
-        </CopyrightText>
-      </FooterContent>
-    </FooterContainer>
+    <>
+        <FooterContainer>
+            <FooterContent>
+                <TextBlock>
+                Created by Chris Renshaw using Google AI Studio and Firebase Studio.
+                </TextBlock>
+                <LinkContainer>
+                    <FooterLink href="mailto:CRSoftwareEngineer@outlook.com">Contact</FooterLink>
+                    <FooterLink href="https://www.linkedin.com/in/chris-renshaw-renners7777/" target="_blank" rel="noopener noreferrer">LinkedIn</FooterLink>
+                    <FooterLink href="https://github.com/renners7777" target="_blank" rel="noopener noreferrer">Github</FooterLink>
+                    <FooterLink href="https://www.chrisrenshaw.net/" target="_blank" rel="noopener noreferrer">Website</FooterLink>
+                    <FooterButton onClick={() => setPrivacyPolicyOpen(true)}>Privacy Policy</FooterButton>
+                </LinkContainer>
+                <CopyrightText>
+                Copyright © Chris Renshaw 2025.
+                </CopyrightText>
+            </FooterContent>
+        </FooterContainer>
+        {isPrivacyPolicyOpen && <PrivacyPolicy onClose={() => setPrivacyPolicyOpen(false)} />}
+    </>
   );
 };
 
