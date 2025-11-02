@@ -106,8 +106,8 @@ const App: React.FC = () => {
 
       if (relationshipResponse.documents.length > 0) {
           const doc = relationshipResponse.documents[0];
+          setShareableCode(doc.shareable_id);
           if (currentUser.prefs.role === 'survivor') {
-              setShareableCode(doc.shareable_id);
               if (doc.caregiver_name && currentUser.prefs.caregiver_name !== doc.caregiver_name) {
                   await account.updatePrefs({ ...currentUser.prefs, caregiver_name: doc.caregiver_name, caregiver_id: doc.caregiver_id });
               }
