@@ -1,10 +1,144 @@
 import React, { useState } from 'react';
+import styled from 'styled-components';
 import type { JournalEntry } from '../types';
 
 interface JournalProps {
     journalEntries: JournalEntry[];
     onAddJournalEntry: (content: string, share: boolean) => void;
 }
+
+const Container = styled.div`
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+const Card = styled.div`
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+`;
+
+const Title = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+`;
+
+const JournalForm = styled.form``;
+
+const TextArea = styled.textarea`
+  width: 100%;
+  height: 8rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+`;
+
+const ControlsContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+`;
+
+const ShareLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #4b5563;
+  cursor: pointer;
+`;
+
+const Checkbox = styled.input`
+  height: 1.25rem;
+  width: 1.25rem;
+  border-radius: 0.25rem;
+  border-color: #d1d5db;
+  color: #2563eb;
+  &:focus {
+    ring: #2563eb;
+  }
+`;
+
+const SaveButton = styled.button`
+  padding: 0.5rem 1.5rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+  border: none;
+
+  &:hover {
+    background-color: #1d4ed8;
+  }
+
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+
+  &:disabled {
+    background-color: #93c5fd;
+    cursor: not-allowed;
+  }
+`;
+
+const EntryList = styled.ul`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const EntryListItem = styled.li`
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+  border: 1px solid #e5e7eb;
+`;
+
+const EntryHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+`;
+
+const EntryDate = styled.p`
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+`;
+
+const SharedBadge = styled.span`
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #166534;
+  background-color: #dcfce7;
+  border-radius: 9999px;
+`;
+
+const EntryContent = styled.p`
+  color: #374151;
+  white-space: pre-wrap;
+`;
+
+const NoEntriesText = styled.p`
+  color: #6b7280;
+`;
 
 const Journal: React.FC<JournalProps> = ({ journalEntries, onAddJournalEntry }) => {
     const [newEntryContent, setNewEntryContent] = useState('');
@@ -27,63 +161,60 @@ const Journal: React.FC<JournalProps> = ({ journalEntries, onAddJournalEntry }) 
     };
 
     return (
-        <div className="space-y-6">
-            <div className="p-6 bg-white rounded-lg shadow-md">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">New Journal Entry</h2>
-                <form onSubmit={handleSaveEntry}>
-                    <textarea
+        <Container>
+            <Card>
+                <Title>New Journal Entry</Title>
+                <JournalForm onSubmit={handleSaveEntry}>
+                    <TextArea
                         value={newEntryContent}
                         onChange={(e) => setNewEntryContent(e.target.value)}
                         placeholder="How are you feeling today?"
-                        className="w-full h-32 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         required
                     />
-                    <div className="flex items-center justify-between mt-4">
-                        <label className="flex items-center space-x-2 text-gray-600 cursor-pointer">
-                            <input
+                    <ControlsContainer>
+                        <ShareLabel>
+                            <Checkbox
                                 type="checkbox"
                                 checked={shareWithCompanion}
                                 onChange={(e) => setShareWithCompanion(e.target.checked)}
-                                className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
                             <span>Share with companion</span>
-                        </label>
-                        <button
+                        </ShareLabel>
+                        <SaveButton
                             type="submit"
                             disabled={isSaving || !newEntryContent.trim()}
-                            className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-colors"
                         >
                             {isSaving ? 'Saving...' : 'Save Entry'}
-                        </button>
-                    </div>
-                </form>
-            </div>
+                        </SaveButton>
+                    </ControlsContainer>
+                </JournalForm>
+            </Card>
 
-            <div className="p-6 bg-white rounded-lg shadow-md">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">Past Entries</h2>
+            <Card>
+                <Title>Past Entries</Title>
                 {journalEntries.length > 0 ? (
-                    <ul className="space-y-4">
+                    <EntryList>
                         {journalEntries.map(entry => (
-                            <li key={entry.$id} className="p-4 bg-gray-50 rounded-md border border-gray-200">
-                                <div className="flex justify-between items-center mb-2">
-                                    <p className="text-sm font-medium text-gray-500">
+                            <EntryListItem key={entry.$id}>
+                                <EntryHeader>
+                                    <EntryDate>
                                         {new Date(entry.$createdAt).toLocaleString()}
-                                    </p>
+                                    </EntryDate>
                                     {entry.shared_with_companion && (
-                                        <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
+                                        <SharedBadge>
                                             Shared
-                                        </span>
+                                        </SharedBadge>
                                     )}
-                                </div>
-                                <p className="text-gray-700 whitespace-pre-wrap">{entry.content}</p>
-                            </li>
+                                </EntryHeader>
+                                <EntryContent>{entry.content}</EntryContent>
+                            </EntryListItem>
                         ))}
-                    </ul>
+                    </EntryList>
                 ) : (
-                    <p className="text-gray-500">You haven't written any journal entries yet.</p>
+                    <NoEntriesText>You haven't written any journal entries yet.</NoEntriesText>
                 )}
-            </div>
-        </div>
+            </Card>
+        </Container>
     );
 };
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import type { Models } from 'appwrite';
 import { Permission, Query } from 'appwrite';
+import styled, { keyframes } from 'styled-components';
 import Layout from './components/Layout';
 import Home from './components/Home';
 import Tasks from './components/Tasks';
@@ -17,6 +18,47 @@ import { Page } from './types';
 import { client, databases, getSession, logoutUser, DATABASE_ID, TASKS_COLLECTION_ID, MESSAGES_COLLECTION_ID, USER_RELATIONSHIPS_COLLECTION_ID, JOURNAL_TABLE_COLLECTION_ID, ID } from './services/appwrite';
 import AppwriteError from './components/AppwriteError';
 import { initializeApiKey } from './services/apiKeyService';
+
+const AppContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  font-family: sans-serif;
+  background-color: #f9fafb;
+`;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+`;
+
+const spin = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+const LoadingSpinner = styled.div`
+  width: 4rem;
+  height: 4rem;
+  border: 4px dashed #2563eb;
+  border-radius: 50%;
+  animation: ${spin} 1s linear infinite;
+  margin: 0 auto;
+`;
+
+const LoadingText = styled.p`
+  font-size: 1.25rem;
+  color: #4b5563;
+  margin-top: 1rem;
+`;
+
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -322,12 +364,12 @@ const App: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-100">
+      <LoadingContainer>
         <div className="text-center">
-            <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-blue-600 mx-auto"></div>
-            <p className="text-xl text-gray-600 mt-4">Loading...</p>
+            <LoadingSpinner />
+            <LoadingText>Loading...</LoadingText>
         </div>
-      </div>
+      </LoadingContainer>
     );
   }
 
@@ -340,7 +382,7 @@ const App: React.FC = () => {
   }
   
   return (
-    <div className="flex flex-col h-screen font-sans bg-gray-50">
+    <AppContainer>
       <Routes>
         <Route element={<Layout onLogout={handleLogout} />}>
           <Route path={Page.Home} element={<Home user={user} shareableCode={shareableCode} />} />
@@ -353,7 +395,7 @@ const App: React.FC = () => {
         </Route>
       </Routes>
       <VoiceInput onCommand={handleVoiceCommand} apiKey={apiKey} />
-    </div>
+    </AppContainer>
   );
 };
 

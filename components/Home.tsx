@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Models } from 'appwrite';
+import styled from 'styled-components';
 import type { UserPrefs } from '../types';
 import { Page as PageEnum } from '../types';
 
@@ -24,59 +25,55 @@ const Home: React.FC<HomeProps> = ({ user, shareableCode }) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="p-6 bg-white rounded-lg shadow-md text-center">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-2">Welcome Back, {user?.name}!</h2>
-        <p className="text-gray-600">
+    <Container>
+      <WelcomeBanner>
+        <WelcomeTitle>Welcome Back, {user?.name}!</WelcomeTitle>
+        <WelcomeText>
           We're here to support you. What would you like to do today?
-        </p>
-      </div>
+        </WelcomeText>
+      </WelcomeBanner>
 
       {isSurvivor && (
         caregiverName ? (
-            <div className="p-6 bg-green-50 border border-green-200 rounded-lg shadow-sm text-center">
-                <p className="text-green-800 font-medium">
-                    You are linked with your companion, <span className="font-bold">{caregiverName}</span>.
+            <LinkedBanner>
+                <p>
+                    You are linked with your companion, <strong>{caregiverName}</strong>.
                 </p>
-            </div>
+            </LinkedBanner>
         ) : (
-            <div className="p-6 bg-white rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold text-gray-800 mb-1">Link with a Companion</h3>
-                <p className="text-gray-600 mb-4">Share this code with your companion. They can use it in their app to connect with you.</p>
+            <ShareContainer>
+                <ShareTitle>Link with a Companion</ShareTitle>
+                <ShareText>Share this code with your companion. They can use it in their app to connect with you.</ShareText>
                 {shareableCode ? (
-                    <div className="flex items-center gap-2 p-3 bg-gray-100 rounded-md border">
-                        <p className="flex-grow text-2xl font-bold tracking-widest text-blue-700 font-mono text-center">
+                    <ShareCodeContainer>
+                        <ShareCode>
                             {shareableCode}
-                        </p>
-                        <button 
-                            onClick={handleCopyToClipboard}
-                            className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors flex items-center gap-2"
-                            aria-label="Copy code to clipboard"
-                        >
+                        </ShareCode>
+                        <CopyButton onClick={handleCopyToClipboard} aria-label="Copy code to clipboard">
                             {copied ? (
-                            <>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                <span>Copied!</span>
-                            </>
+                                <>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                    <span>Copied!</span>
+                                </>
                             ) : (
                                 <>
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                <span>Copy</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                    <span>Copy</span>
                                 </>
                             )}
-                        </button>
-                    </div>
+                        </CopyButton>
+                    </ShareCodeContainer>
                 ) : (
-                    <div className="text-center text-gray-500 p-4">
+                    <LoadingContainer>
                         <div className="w-6 h-6 border-2 border-dashed rounded-full animate-spin border-blue-600 mx-auto"></div>
                         <p className="mt-2">Loading your code...</p>
-                    </div>
+                    </LoadingContainer>
                 )}
-            </div>
+            </ShareContainer>
         )
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <Grid>
         <HomeCard
             title="Daily Tasks"
             description="View and manage your daily tasks."
@@ -119,8 +116,8 @@ const Home: React.FC<HomeProps> = ({ user, shareableCode }) => {
           icon={<TestIcon />}
           to={PageEnum.Testing}
         />
-      </div>
-    </div>
+      </Grid>
+    </Container>
   );
 };
 
@@ -134,13 +131,13 @@ interface HomeCardProps {
 const HomeCard: React.FC<HomeCardProps> = ({ title, description, icon, to }) => {
     const isExternal = to.startsWith('http');
     const cardContent = (
-        <div className="bg-white p-6 rounded-lg shadow-md flex items-start space-x-4 hover:bg-blue-50 transition-colors duration-200 text-left w-full">
-            <div className="text-blue-600">{icon}</div>
+        <CardContainer>
+            <IconContainer>{icon}</IconContainer>
             <div>
-                <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-                <p className="text-gray-600 mt-1">{description}</p>
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>{description}</CardDescription>
             </div>
-        </div>
+        </CardContainer>
     );
 
     if (isExternal) {
@@ -157,6 +154,150 @@ const HomeCard: React.FC<HomeCardProps> = ({ title, description, icon, to }) => 
         </Link>
     );
 };
+
+const Container = styled.div`
+    padding: 1.5rem;
+`;
+
+const WelcomeBanner = styled.div`
+    padding: 1.5rem;
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    text-align: center;
+    margin-bottom: 1.5rem;
+`;
+
+const WelcomeTitle = styled.h2`
+    font-size: 1.875rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+`;
+
+const WelcomeText = styled.p`
+    color: #4b5563;
+`;
+
+const LinkedBanner = styled.div`
+    padding: 1.5rem;
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #166534;
+    font-weight: 500;
+`;
+
+const ShareContainer = styled.div`
+    padding: 1.5rem;
+    background-color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    margin-bottom: 1.5rem;
+`;
+
+const ShareTitle = styled.h3`
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+`;
+
+const ShareText = styled.p`
+    color: #4b5563;
+    margin-bottom: 1rem;
+`;
+
+const ShareCodeContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background-color: #f3f4f6;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+`;
+
+const ShareCode = styled.p`
+    flex-grow: 1;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #1d4ed8;
+    font-family: monospace;
+    text-align: center;
+`;
+
+const CopyButton = styled.button`
+    padding: 0.5rem 1rem;
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 0.375rem;
+    &:hover {
+        background-color: #1d4ed8;
+    }
+    &:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+        box-shadow: 0 0 0 2px #3b82f6;
+    }
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+`;
+
+const LoadingContainer = styled.div`
+    text-align: center;
+    color: #6b7280;
+    padding: 1rem;
+`;
+
+const Grid = styled.div`
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+
+    @media (min-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
+    }
+`;
+
+const CardContainer = styled.div`
+    background-color: #ffffff;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    transition: background-color 0.2s;
+    text-align: left;
+    width: 100%;
+
+    &:hover {
+        background-color: #eff6ff;
+    }
+`;
+
+const IconContainer = styled.div`
+    color: #2563eb;
+`;
+
+const CardTitle = styled.h3`
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+`;
+
+const CardDescription = styled.p`
+    color: #4b5563;
+    margin-top: 0.25rem;
+`;
 
 const TasksIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import styled from 'styled-components';
 import type { Models } from 'appwrite';
 import type { UserPrefs } from '../types';
 
@@ -7,6 +8,100 @@ interface TestingPanelProps {
     onAddCompanionTask: (text: string) => void;
     user: Models.User<UserPrefs> | null;
 }
+
+const Container = styled.div`
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+const Card = styled.div`
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+`;
+
+const Title = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+`;
+
+const Subtitle = styled.h3`
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+`;
+
+const Description = styled.p`
+  color: #4b5563;
+`;
+
+const WarningBanner = styled.div`
+    padding: 1rem;
+    background-color: #fefce8;
+    border: 1px solid #fef08a;
+    border-radius: 0.5rem;
+    text-align: center;
+`;
+
+const WarningText = styled.p`
+    color: #854d0e;
+    font-weight: 500;
+`;
+
+const SimulationForm = styled.form`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const SimulationInput = styled.input`
+  flex-grow: 1;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+  &:disabled {
+    background-color: #f3f4f6;
+  }
+`;
+
+const SendButton = styled.button`
+  padding: 0.5rem 1.5rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+  border: none;
+
+  &:hover {
+    background-color: #1d4ed8;
+  }
+
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+
+  &:disabled {
+    background-color: #93c5fd;
+    cursor: not-allowed;
+  }
+`;
 
 const TestingPanel: React.FC<TestingPanelProps> = ({ onSendCompanionMessage, onAddCompanionTask, user }) => {
     const [messageText, setMessageText] = useState('');
@@ -31,62 +126,58 @@ const TestingPanel: React.FC<TestingPanelProps> = ({ onSendCompanionMessage, onA
     };
 
     return (
-        <div className="space-y-6">
-            <div className="p-6 bg-white rounded-lg shadow-md">
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">Developer Testing Panel</h2>
-                <p className="text-gray-600">Use these tools to simulate actions from the companion app.</p>
-            </div>
+        <Container>
+            <Card>
+                <Title>Developer Testing Panel</Title>
+                <Description>Use these tools to simulate actions from the companion app.</Description>
+            </Card>
             
             {!isCompanionLinked && (
-                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-                    <p className="text-yellow-800 font-medium">
+                 <WarningBanner>
+                    <WarningText>
                         Please link with a companion first to use these testing features.
-                    </p>
-                </div>
+                    </WarningText>
+                </WarningBanner>
             )}
 
-            <div className="p-6 bg-white rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Simulate Companion Message</h3>
-                <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                    <input
+            <Card>
+                <Subtitle>Simulate Companion Message</Subtitle>
+                <SimulationForm onSubmit={handleSendMessage}>
+                    <SimulationInput
                         type="text"
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
                         placeholder="Type a message as the companion..."
-                        className="flex-grow w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                         disabled={!isCompanionLinked}
                     />
-                    <button
+                    <SendButton
                         type="submit"
-                        className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-colors"
                         disabled={!isCompanionLinked || !messageText.trim()}
                     >
                         Send
-                    </button>
-                </form>
-            </div>
+                    </SendButton>
+                </SimulationForm>
+            </Card>
 
-            <div className="p-6 bg-white rounded-lg shadow-md">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Simulate Companion Adding a Task</h3>
-                <form onSubmit={handleAddTask} className="flex items-center gap-2">
-                    <input
+            <Card>
+                <Subtitle>Simulate Companion Adding a Task</Subtitle>
+                <SimulationForm onSubmit={handleAddTask}>
+                    <SimulationInput
                         type="text"
                         value={taskText}
                         onChange={(e) => setTaskText(e.target.value)}
                         placeholder="e.g., Doctor's appointment at 3 PM"
-                        className="flex-grow w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
                         disabled={!isCompanionLinked}
                     />
-                    <button
+                    <SendButton
                         type="submit"
-                        className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-colors"
                         disabled={!isCompanionLinked || !taskText.trim()}
                     >
                         Add Task
-                    </button>
-                </form>
-            </div>
-        </div>
+                    </SendButton>
+                </SimulationForm>
+            </Card>
+        </Container>
     );
 };
 

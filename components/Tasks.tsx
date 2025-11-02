@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import styled from 'styled-components';
 import type { Task } from '../types';
 
 interface TasksProps {
@@ -7,11 +8,134 @@ interface TasksProps {
   onAddTask: (text: string) => void;
 }
 
+const Container = styled.div`
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+const Card = styled.div`
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+`;
+
+const Title = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+`;
+
+const AddTaskForm = styled.form`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const TaskInput = styled.input`
+  flex-grow: 1;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+`;
+
+const AddButton = styled.button`
+  padding: 0.5rem 1.5rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+  &:hover {
+    background-color: #1d4ed8;
+  }
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+  &:disabled {
+    background-color: #93c5fd;
+  }
+`;
+
+const TaskList = styled.ul`
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+`;
+
+const TaskListItem = styled.li`
+  display: flex;
+  align-items: flex-start;
+  padding: 0.75rem;
+  background-color: #f9fafb;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+`;
+
+const TaskCheckboxContainer = styled.div`
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+`;
+
+const TaskIndex = styled.span`
+  margin-right: 0.75rem;
+  font-weight: 700;
+  color: #2563eb;
+`;
+
+const TaskCheckbox = styled.input`
+  height: 1.5rem;
+  width: 1.5rem;
+  border-radius: 0.25rem;
+  border-color: #d1d5db;
+  color: #2563eb;
+  &:focus {
+    ring: #2563eb;
+  }
+  cursor: pointer;
+`;
+
+const TaskTextContainer = styled.div`
+  margin-left: 1rem;
+  flex: 1;
+`;
+
+const TaskText = styled.span<{ completed: boolean }>`
+  font-size: 1.125rem;
+  color: ${props => (props.completed ? '#9ca3af' : '#374151')};
+  text-decoration: ${props => (props.completed ? 'line-through' : 'none')};
+`;
+
+const CreatorText = styled.p`
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+`;
+
+const NoTasksText = styled.p`
+  color: #6b7280;
+`;
+
 const Tasks: React.FC<TasksProps> = ({ tasks, onToggleTask, onAddTask }) => {
   const [newTaskText, setNewTaskText] = useState('');
   const incompleteTasks = tasks.filter(task => !task.completed);
   const completedTasks = tasks.filter(task => task.completed);
-  
+
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (newTaskText.trim()) {
@@ -21,51 +145,49 @@ const Tasks: React.FC<TasksProps> = ({ tasks, onToggleTask, onAddTask }) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Add a New Task</h2>
-        <form onSubmit={handleAddTask} className="flex items-center gap-2">
-            <input
+    <Container>
+      <Card>
+        <Title>Add a New Task</Title>
+        <AddTaskForm onSubmit={handleAddTask}>
+            <TaskInput
                 type="text"
                 value={newTaskText}
                 onChange={(e) => setNewTaskText(e.target.value)}
                 placeholder="e.g., Take medication at 10 AM"
-                className="flex-grow w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
-            <button
+            <AddButton
                 type="submit"
-                className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 transition-colors"
                 disabled={!newTaskText.trim()}
             >
                 Add
-            </button>
-        </form>
-      </div>
+            </AddButton>
+        </AddTaskForm>
+      </Card>
 
-      <div className="p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Today's Tasks</h2>
+      <Card>
+        <Title>Today's Tasks</Title>
         {incompleteTasks.length > 0 ? (
-          <ul className="space-y-3">
+          <TaskList>
             {incompleteTasks.map((task, index) => (
               <TaskItem key={task.$id} task={task} onToggleTask={onToggleTask} index={index}/>
             ))}
-          </ul>
+          </TaskList>
         ) : (
-          <p className="text-gray-500">You've completed all your tasks for today. Great job!</p>
+          <NoTasksText>You've completed all your tasks for today. Great job!</NoTasksText>
         )}
-      </div>
+      </Card>
 
       {completedTasks.length > 0 && (
-         <div className="p-6 bg-white rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Completed Tasks</h2>
-            <ul className="space-y-3">
+         <Card>
+            <Title>Completed Tasks</Title>
+            <TaskList>
                 {completedTasks.map((task, index) => (
                 <TaskItem key={task.$id} task={task} onToggleTask={onToggleTask} index={index} />
                 ))}
-            </ul>
-        </div>
+            </TaskList>
+        </Card>
       )}
-    </div>
+    </Container>
   );
 };
 
@@ -76,29 +198,26 @@ interface TaskItemProps {
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, onToggleTask, index }) => (
-    <li
-        className="flex items-start p-3 bg-gray-50 rounded-md transition-colors duration-200"
-    >
-        <div className="flex items-center flex-shrink-0 mt-1">
-            <span className="mr-3 font-bold text-blue-600">{index + 1}.</span>
-            <input
+    <TaskListItem>
+        <TaskCheckboxContainer>
+            <TaskIndex>{index + 1}.</TaskIndex>
+            <TaskCheckbox
                 type="checkbox"
                 checked={task.completed}
                 onChange={() => onToggleTask(task.$id)}
-                className="h-6 w-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
             />
-        </div>
-        <div className="ml-4 flex-1">
-            <span className={`text-lg ${task.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+        </TaskCheckboxContainer>
+        <TaskTextContainer>
+            <TaskText completed={task.completed}>
                 {task.text}
-            </span>
+            </TaskText>
             {task.creator_name && (
-                <p className="text-xs text-gray-500 mt-1">
+                <CreatorText>
                     Added by {task.creator_name}
-                </p>
+                </CreatorText>
             )}
-        </div>
-    </li>
+        </TaskTextContainer>
+    </TaskListItem>
 );
 
 export default Tasks;

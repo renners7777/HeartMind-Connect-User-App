@@ -1,10 +1,94 @@
 import React, { useState, useRef, useEffect } from 'react';
+import styled from 'styled-components';
 import type { Message } from '../types';
 
 interface ChatProps {
   messages: Message[];
   onSendMessage: (text: string) => void;
 }
+
+const ChatContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: calc(100vh - 10rem); /* Adjusted for layout */
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  margin: 1.5rem;
+`;
+
+const MessageList = styled.div`
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const MessageItem = styled.div<{ sender: 'user' | 'companion' }>`
+  display: flex;
+  justify-content: ${props => (props.sender === 'user' ? 'flex-end' : 'flex-start')};
+`;
+
+const MessageBubble = styled.div<{ sender: 'user' | 'companion' }>`
+  max-width: 80%;
+  padding: 0.5rem 1rem;
+  border-radius: 0.75rem;
+  background-color: ${props => (props.sender === 'user' ? '#2563eb' : '#e5e7eb')};
+  color: ${props => (props.sender === 'user' ? '#ffffff' : '#1f2937')};
+  border-bottom-right-radius: ${props => (props.sender === 'user' ? '0' : '0.75rem')};
+  border-bottom-left-radius: ${props => (props.sender === 'user' ? '0.75rem' : '0')};
+`;
+
+const InputArea = styled.div`
+  padding: 1rem;
+  border-top: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+`;
+
+const InputContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+`;
+
+const MessageInput = styled.input`
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 9999px;
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #3b82f6;
+    border-color: #2563eb;
+  }
+`;
+
+const SendButton = styled.button`
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: #ffffff;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #1d4ed8;
+  }
+
+  &:disabled {
+    background-color: #93c5fd;
+    cursor: not-allowed;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #3b82f6;
+  }
+`;
 
 const Chat: React.FC<ChatProps> = ({ messages, onSendMessage }) => {
   const [inputText, setInputText] = useState('');
@@ -26,46 +110,35 @@ const Chat: React.FC<ChatProps> = ({ messages, onSendMessage }) => {
   };
 
   return (
-    <div className="flex flex-col h-full max-h-[calc(100vh-250px)] bg-white rounded-lg shadow-md">
-      <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+    <ChatContainer>
+      <MessageList>
         {messages.map(message => (
-          <div
-            key={message.$id}
-            className={`flex items-end ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div
-              className={`max-w-xs md:max-w-md lg:max-w-lg px-4 py-2 rounded-lg ${
-                message.sender === 'user'
-                  ? 'bg-blue-600 text-white rounded-br-none'
-                  : 'bg-gray-200 text-gray-800 rounded-bl-none'
-              }`}
-            >
+          <MessageItem key={message.$id} sender={message.sender}>
+            <MessageBubble sender={message.sender}>
               <p>{message.text}</p>
-            </div>
-          </div>
+            </MessageBubble>
+          </MessageItem>
         ))}
         <div ref={messagesEndRef} />
-      </div>
-      <div className="p-4 border-t bg-gray-50">
-        <div className="flex items-center space-x-2">
-          <input
+      </MessageList>
+      <InputArea>
+        <InputContainer>
+          <MessageInput
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Type a message..."
-            className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <button
+          <SendButton
             onClick={handleSend}
-            className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-blue-300"
             disabled={!inputText.trim()}
           >
             Send
-          </button>
-        </div>
-      </div>
-    </div>
+          </SendButton>
+        </InputContainer>
+      </InputArea>
+    </ChatContainer>
   );
 };
 

@@ -1,19 +1,31 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import styled from 'styled-components';
 import Header from './Header';
 
 interface LayoutProps {
   onLogout: () => void;
 }
 
+const LayoutContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+`;
+
+const MainContent = styled.main`
+  padding-top: 4rem; /* 64px */
+  flex-grow: 1;
+`;
+
 const Layout: React.FC<LayoutProps> = ({ onLogout }) => {
   return (
-    <div className="flex flex-col flex-grow">
+    <LayoutContainer>
       <Header onLogout={onLogout} />
-      <main className="pt-16 flex-grow">
+      <MainContent>
         <Outlet />
-      </main>
-    </div>
+      </MainContent>
+    </LayoutContainer>
   );
 };
 
