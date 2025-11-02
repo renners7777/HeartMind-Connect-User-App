@@ -217,7 +217,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             { 
               shareable_id: newShareCode, 
               survivor_id: newUser.$id,
-              survivor_name: newUser.name 
+              survivor_name: newUser.name, 
+              companion_id: null,
+              companion_name: null
             },
             [...readPermissions, ...userPermissions]
         );
