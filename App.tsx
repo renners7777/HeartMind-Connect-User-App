@@ -33,6 +33,7 @@ const LoadingContainer = styled.div`
   align-items: center;
   justify-content: center;
   background-color: #f3f4f6;
+  text-align: center;
 `;
 
 const spin = keyframes`
@@ -208,7 +209,7 @@ const App: React.FC = () => {
             navigate(Page.Chat);
         }
     } else if (lowerCaseCommand.includes('go to home')) {
-        navigate(Page.Home);
+        navigate('/');
     } else if (lowerCaseCommand.includes('go to tasks')) {
         navigate(Page.Tasks);
     } else if (lowerCaseCommand.includes('go to journal')) {
@@ -355,7 +356,7 @@ const App: React.FC = () => {
     setTasks([]);
     setMessages([]);
     setJournalEntries([]);
-    navigate(Page.Home);
+    navigate('/');
   };
   
   const handleLoginSuccess = async () => {
@@ -365,7 +366,7 @@ const App: React.FC = () => {
   if (isLoading) {
     return (
       <LoadingContainer>
-        <div className="text-center">
+        <div>
             <LoadingSpinner />
             <LoadingText>Loading...</LoadingText>
         </div>
@@ -385,7 +386,7 @@ const App: React.FC = () => {
     <AppContainer>
       <Routes>
         <Route element={<Layout onLogout={handleLogout} />}>
-          <Route path={Page.Home} element={<Home user={user} shareableCode={shareableCode} />} />
+          <Route index element={<Home user={user} shareableCode={shareableCode} />} />
           <Route path={Page.Tasks} element={<Tasks tasks={tasks} onToggleTask={toggleTask} onAddTask={addTask} />} />
           <Route path={Page.Chat} element={<Chat messages={messages} onSendMessage={sendMessage} />} />
           <Route path={Page.Progress} element={<Progress tasks={tasks} />} />
