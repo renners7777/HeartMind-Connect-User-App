@@ -90,10 +90,10 @@
 
 export const APPWRITE_PROJECT_ID = '68b201d3001d7dbcec43';
 export const DATABASE_ID = '68b213e7001400dc7f21';
-export const TASKS_COLLECTION_ID = 'reminders_table';
-export const MESSAGES_COLLECTION_ID = 'messages_table';
-export const USER_RELATIONSHIPS_COLLECTION_ID = 'user_relationships_table';
-export const JOURNAL_TABLE_COLLECTION_ID = 'journal_table';
+export const TASKS_COLLECTION_ID = 'reminders';
+export const MESSAGES_COLLECTION_ID = 'messages';
+export const USER_RELATIONSHIPS_COLLECTION_ID = 'user_relationships';
+export const JOURNAL_TABLE_COLLECTION_ID = 'journal';
 
 /**
  * A simple check to see if the user has updated the configuration placeholders.
