@@ -216,7 +216,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             ID.unique(),
             { 
               shareable_id: newShareCode, 
-              patient_id: newUser.$id,
+              survivor_id: newUser.$id,
               survivor_name: newUser.name, 
               companion_id: null,
               companion_name: null
